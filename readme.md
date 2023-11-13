@@ -29,3 +29,5 @@ nvcc eigen_decomposition.cu -o eigen.out -O3 -gencode arch=compute_86,code=sm_86
 ```
 
 The reason for `arch=compute_86,code=sm_86` is simply because I'm using a 4090, you can replace that part with whatever arch you want. But do notice that the support for double is better for the later archs.
+
+Note that for the result that cusolver gives, the eigen vectors are stored in each row, which is different from what I have here (stored in each column). So you need to transpose the result from cusolver to compare with my result.
