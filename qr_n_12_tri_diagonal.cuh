@@ -2260,7 +2260,7 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
     double eq[144];
     double e_tmp, q_tmp;
 
-    for (unsigned int iteration = 0; iteration < 32; iteration++){
+    for (unsigned int iteration = 0; iteration < 23; iteration++){
         compute_qr_tri_diagonal_0(ACopy, Q, R);
         compute_qr_tri_diagonal_6(ACopy, Q, R);
         compute_qr_tri_diagonal_8(ACopy, Q, R);
