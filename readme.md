@@ -21,7 +21,12 @@ int main(){
 
 The results will be the Eigen vectors, which are stored in each column in `d_A`, the eigen values stored in `d_e`. To reconstruct the matrix, just do `d_A * d_e * d_A.T`.
 
-The performance tested on RTX4090 for 1M matrix is 330ms, comparing to CUSOLVER's 580ms, it's almost 1.75x faster. You can also just run the `eigen_decomposition.cu` to see the performance. To compile, run:
+The performance tested on RTX4090 for 1M matrix is 208ms, comparing to CUSOLVER's 580ms, it's almost 2.8x faster.
+
+The performance will go down if the matrix is already close to diagonals. First because we do fixed number of iterations of QR while CUSOLVER does jacobi iterations, which will stop quite soon. The second is because we did a trick to fast solve a tri diagonal matrix for the eigen vectors, this does not work when part of the input matrix is already diagonal, and since we do not check the structure of the matrix, if that happens, we simply just redo the eigen vectors using a more stable method.
+
+You can also just run the `eigen_decomposition.cu` to see the performance. To compile, run:
+
 
 ``` bash
 nvcc eigen_decomposition.cu -o eigen.out -O3 -gencode arch=compute_86,code=sm_86 -use_fast_math -lcusolver
