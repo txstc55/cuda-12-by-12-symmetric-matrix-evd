@@ -31,7 +31,3 @@ nvcc eigen_decomposition.cu -o eigen.out -O3 -gencode arch=compute_86,code=sm_86
 The reason for `arch=compute_86,code=sm_86` is simply because I'm using a 4090, you can replace that part with whatever arch you want. But do notice that the support for double is better for the later archs.
 
 Note that for the result that cusolver gives, the eigen vectors are stored in each row, which is different from what I have here (stored in each column). So you need to transpose the result from cusolver to compare with my result.
-
-## Possible Future work
-
-The code right now is heavily bottlenecked by matrix multiplication. The series of matrix multiplication assembles the eigen vectors. However, another way of getting the eigen vectors is to solve a tri diagonal system produced by the householder transformation. I commented out that part of the code because I cannot find a good way to solve the system without producing a large error since the system has nullspace of 1. If you have a good idea of how to do it please let me know.
