@@ -2184,7 +2184,7 @@ __device__ __forceinline__ void compute_qr_tri_diagonal_10(const double A[144], 
   R[287 - 144] = (sqrt(INTERMEDIATE_39));
 }
 
-__device__ __forceinline__ void find_pivot_and_rotate(double* A, const int n, double* E) {
+__device__ __forceinline__ void find_pivot_and_rotate(double* A, const int n, double* E, bool updateEigenVectors) {
     // Initialize maximum value and indices for pivot element
     int p = -1;
     int q = -1;
@@ -2232,6 +2232,7 @@ __device__ __forceinline__ void find_pivot_and_rotate(double* A, const int n, do
         A[p * n + q] = 0.0f;
         A[q * n + p] = 0.0f;  // Since A is symmetric
 
+        if (updateEigenVectors){
         // Update the rotation matrix
         for (int i = 0; i < n; ++i) {
             double e_ip = E[i * n + p];
@@ -2239,11 +2240,12 @@ __device__ __forceinline__ void find_pivot_and_rotate(double* A, const int n, do
             E[i * n + p] = c * e_ip - s * e_iq;
             E[i * n + q] = s * e_ip + c * e_iq;
         }
+        }
     }
 }
 
 
-__device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144]){
+__device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144], bool updateEigenVectors){
     double Q[144];
     double R[144];
     for (int i = 0; i < 144; ++i) {
@@ -2302,20 +2304,22 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144])
             ACopy[i * 12 + j] += R[i * 12 + k] * Q[k * 12 + j];
         }
 
-        // E = E * Q
-        for (unsigned int i = 0; i < 12; i++){
-            for (unsigned int j = 0; j < 12; j++){
-                double sum = 0.0;
-                for (unsigned int k = 0; k < 12; k++){
-                    e_tmp = E[i * 12 + k];
-                    q_tmp = Q[k * 12 + j];
-                    sum += e_tmp * q_tmp;
+        if (updateEigenVectors){
+            // E = E * Q
+            for (unsigned int i = 0; i < 12; i++){
+                for (unsigned int j = 0; j < 12; j++){
+                    double sum = 0.0;
+                    for (unsigned int k = 0; k < 12; k++){
+                        e_tmp = E[i * 12 + k];
+                        q_tmp = Q[k * 12 + j];
+                        sum += e_tmp * q_tmp;
+                    }
+                    eq[i * 12 + j] = sum;
                 }
-                eq[i * 12 + j] = sum;
             }
-        }
-        for (unsigned int i = 0; i < 144; i++){
-            E[i] = eq[i];
+            for (unsigned int i = 0; i < 144; i++){
+                E[i] = eq[i];
+            }
         }
 
     }
@@ -2327,7 +2331,7 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144])
     // now we do the jacobi iterations
     bool keepDoingJacobian = true;
     while (keepDoingJacobian){
-        find_pivot_and_rotate(ACopy, 12, E);
+        find_pivot_and_rotate(ACopy, 12, E, updateEigenVectors);
         keepDoingJacobian = false;
         for (int i = 0; i < 12; i++){
             for (int j = i + 1; j < 12; j++){
