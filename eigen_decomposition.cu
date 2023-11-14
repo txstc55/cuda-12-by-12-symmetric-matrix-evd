@@ -108,6 +108,7 @@ int main() {
     std::vector<double> As;
     As.resize(n * n * batchSize);
     cudaMemcpy(As.data(), d_A, sizeof(double) * n * n * batchSize, cudaMemcpyDeviceToHost);
+    printf("Random matrix generated and stored on host and device\n");
 
     // ===============================================
     // Eigen value decomposition with our code
@@ -121,7 +122,7 @@ int main() {
     cudaEventSynchronize(stop);
     milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
-    printf("Time for 1 execution of householder transformation: %f ms\n", milliseconds);
+    printf("Time for 1 execution of our eigen value decomposition: %f ms\n", milliseconds);
 
     // ===============================================
     // check the error for our solution
@@ -217,7 +218,7 @@ int main() {
     cudaEventSynchronize(stop);
     milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
-    printf("Time for 1 executions of eigen value decomposition: %f ms\n", milliseconds);
+    printf("Time for 1 execution of cusolver eigen value decomposition: %f ms\n", milliseconds);
     // Synchronize and check for errors
     CHECK_CUDA(cudaDeviceSynchronize());
     CHECK_CUDA(cudaMemcpy(&info_gpu, d_info, sizeof(int), cudaMemcpyDeviceToHost));
