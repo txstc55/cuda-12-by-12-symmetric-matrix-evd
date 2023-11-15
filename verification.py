@@ -33,7 +33,9 @@ ourEigenValues = np.array(ourEigenValues)
 ourEigenValues = np.diag(ourEigenValues)
 
 print("Norm of difference for ours:")
-print(np.linalg.norm(originalMatrix - np.matmul(oursEigenVectors, np.matmul(ourEigenValues, np.transpose(oursEigenVectors)))))
+print(np.linalg.norm(originalMatrix - oursEigenVectors @ ourEigenValues @ oursEigenVectors.T))
+print("Orthogonality of eigenvectors for ours:")
+print(np.linalg.norm(np.eye(12) - oursEigenVectors @ oursEigenVectors.T))
 
 
 cusolverEigenVectors = [0.514056, 0.394388, 0.108907, -0.024090, 0.060983, 0.556434, 0.124151, 0.113567, -0.083025, 0.221050, -0.382692, 0.154613, 
@@ -54,4 +56,6 @@ cusolverEigenValues = np.array(cusolverEigenValues)
 cusolverEigenValues = np.diag(cusolverEigenValues)
 
 print("Norm of difference for cusolver:")
-print(np.linalg.norm(originalMatrix - np.matmul(cusolverEigenVectors, np.matmul(cusolverEigenValues, np.transpose(cusolverEigenVectors)))))
+print(np.linalg.norm(originalMatrix - cusolverEigenVectors @ cusolverEigenValues @ cusolverEigenVectors.T))
+print("Orthogonality of eigenvectors for cusolver:")
+print(np.linalg.norm(np.eye(12) - cusolverEigenVectors @ cusolverEigenVectors.T))
