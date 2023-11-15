@@ -343,7 +343,6 @@ int main() {
     CHECK_CUSOLVER(cusolverDnDestroySyevjInfo(syevj_params));
     CHECK_CUSOLVER(cusolverDnDestroy(cusolverH));
     CHECK_CUDA(cudaDeviceReset());
-    double temp1 = 0.0;
     auto startChrono = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < batchSize; ++i) {
         // Map the 1D array to a 12x12 matrix
@@ -376,7 +375,6 @@ int main() {
     auto endChrono = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = endChrono-startChrono;
     printf("Time for 1 execution of Eigen value decomposition: %f ms\n", elapsed_seconds.count() * 1000);
-    printf("temp1: %lf\n", temp1);
 
 
     return EXIT_SUCCESS;
