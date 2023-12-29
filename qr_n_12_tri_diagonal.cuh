@@ -2306,12 +2306,16 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
     double eq[144];
     double e_tmp, q_tmp;
 
-    for (unsigned int iteration = 0; iteration < 1; iteration++){
+    for (unsigned int iteration = 0; iteration < 21; iteration++){
+        double ACopyCopy[144];
+        for (unsigned int i = 0; i < 144; i++) ACopyCopy[i] = ACopy[i];
         // compute_qr_tri_diagonal_0(ACopy, Q, R);
         // compute_qr_tri_diagonal_6(ACopy, Q, R);
         // compute_qr_tri_diagonal_8(ACopy, Q, R);
         // compute_qr_tri_diagonal_10(ACopy, Q, R);
         householderQR(ACopy, Q, R, 12);
+        double relativeChange = 0;
+        
 
         // compute ACopy = R * Q
         unsigned int i = 0;
@@ -2367,6 +2371,14 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
             for (unsigned int i = 0; i < 144; i++){
                 E[i] = eq[i];
             }
+        }
+        for (unsigned int i = 0; i < 11; i++){
+            relativeChange += fabs(ACopy[i * 12 + i] - ACopyCopy[i * 12 + i]) + fabs(ACopy[i * 12 + i + 1] - ACopyCopy[i * 12 + i + 1]);
+        }
+        relativeChange += fabs(ACopy[12 * 12 - 1] - ACopyCopy[12 * 12 - 1]);
+        if (relativeChange < 1e-1){
+            printf("Break with small change\n");
+            break;
         }
 
     }
