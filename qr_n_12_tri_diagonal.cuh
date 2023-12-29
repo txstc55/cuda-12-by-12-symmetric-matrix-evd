@@ -2258,11 +2258,7 @@ __device__ void householderQR(const double *A, double *Q, double *R, int n) {
         for (int i = k; i < n; ++i) {
             norm_x += R[i * n + k] * R[i * n + k];
         }
-        double alpha = sqrt(norm_x);
-        if (R[k * n + k] < 0) {
-            alpha = -alpha;
-        }
-
+        double alpha = -copysign(sqrt(norm_x), R[k * n + k]);
         double r = sqrt(0.5 * alpha * alpha - 0.5 * R[k * n + k] * alpha);
         double v[12] = {0}; // Assuming n = 12
         v[k] = (R[k * n + k] - alpha) / (2.0 * r);
@@ -2294,6 +2290,7 @@ __device__ void householderQR(const double *A, double *Q, double *R, int n) {
 }
 
 
+
 __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144], bool updateEigenVectors){
     double Q[144];
     double R[144];
@@ -2309,7 +2306,7 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
     double eq[144];
     double e_tmp, q_tmp;
 
-    for (unsigned int iteration = 0; iteration < 23; iteration++){
+    for (unsigned int iteration = 0; iteration < 1; iteration++){
         // compute_qr_tri_diagonal_0(ACopy, Q, R);
         // compute_qr_tri_diagonal_6(ACopy, Q, R);
         // compute_qr_tri_diagonal_8(ACopy, Q, R);
