@@ -2245,6 +2245,55 @@ __device__ __forceinline__ void find_pivot_and_rotate(double* A, const int n, do
 }
 
 
+__device__ void householderQR(const double *A, double *Q, double *R, int n) {
+    // Copy A into R and initialize Q as the identity matrix
+    for (int i = 0; i < n * n; ++i) {
+        R[i] = A[i];
+        Q[i] = (i % (n + 1) == 0) ? 1.0 : 0.0; // Identity matrix
+    }
+
+    for (int k = 0; k < n - 1; ++k) {
+        // Compute the Householder vector for the k-th column
+        double norm_x = 0.0;
+        for (int i = k; i < n; ++i) {
+            norm_x += R[i * n + k] * R[i * n + k];
+        }
+        double alpha = sqrt(norm_x);
+        if (R[k * n + k] < 0) {
+            alpha = -alpha;
+        }
+
+        double r = sqrt(0.5 * alpha * alpha - 0.5 * R[k * n + k] * alpha);
+        double v[12] = {0}; // Assuming n = 12
+        v[k] = (R[k * n + k] - alpha) / (2.0 * r);
+        for (int i = k + 1; i < n; ++i) {
+            v[i] = R[i * n + k] / (2.0 * r);
+        }
+
+        // Apply the transformation to R and Q
+        for (int j = k; j < n; ++j) {
+            double sum = 0.0;
+            for (int i = k; i < n; ++i) {
+                sum += v[i] * R[i * n + j];
+            }
+            for (int i = k; i < n; ++i) {
+                R[i * n + j] -= 2.0 * v[i] * sum;
+            }
+        }
+
+        for (int j = 0; j < n; ++j) {
+            double sum = 0.0;
+            for (int i = k; i < n; ++i) {
+                sum += v[i] * Q[j * n + i];
+            }
+            for (int i = k; i < n; ++i) {
+                Q[j * n + i] -= 2.0 * v[i] * sum;
+            }
+        }
+    }
+}
+
+
 __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144], bool updateEigenVectors){
     double Q[144];
     double R[144];
@@ -2261,10 +2310,11 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
     double e_tmp, q_tmp;
 
     for (unsigned int iteration = 0; iteration < 23; iteration++){
-        compute_qr_tri_diagonal_0(ACopy, Q, R);
-        compute_qr_tri_diagonal_6(ACopy, Q, R);
-        compute_qr_tri_diagonal_8(ACopy, Q, R);
-        compute_qr_tri_diagonal_10(ACopy, Q, R);
+        // compute_qr_tri_diagonal_0(ACopy, Q, R);
+        // compute_qr_tri_diagonal_6(ACopy, Q, R);
+        // compute_qr_tri_diagonal_8(ACopy, Q, R);
+        // compute_qr_tri_diagonal_10(ACopy, Q, R);
+        householderQR(ACopy, Q, R, 12);
 
         // compute ACopy = R * Q
         unsigned int i = 0;
