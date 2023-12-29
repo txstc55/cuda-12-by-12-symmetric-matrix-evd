@@ -2377,7 +2377,7 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
         }
         relativeChange += fabs(ACopy[12 * 12 - 1] - ACopyCopy[12 * 12 - 1]);
         if (relativeChange < 1e-1){
-            printf("Break with small change\n");
+            // printf("Break with small change\n");
             break;
         }
 
