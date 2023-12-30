@@ -2295,6 +2295,42 @@ __device__ void householderQR(const double *A, double *Q, double *R, int n) {
     }
 }
 
+__device__ void modifiedGramSchmidt(const double *A, double *Q, double *R) {
+    for (int j = 0; j < 12; ++j) {
+        // Temporary array for the current column
+        double v[12]; // Assuming 12 = 12; adjust as needed
+
+        // Copy column j of A into v
+        for (int i = 0; i < 12; ++i) {
+            v[i] = A[i * 12 + j];
+        }
+
+        // Orthogonalization
+        for (int i = 0; i < j; ++i) {
+            R[i * 12 + j] = 0.0;
+            for (int k = 0; k < 12; ++k) {
+                R[i * 12 + j] += Q[k * 12 + i] * v[k];
+            }
+
+            for (int k = 0; k < 12; ++k) {
+                v[k] -= R[i * 12 + j] * Q[k * 12 + i];
+            }
+        }
+
+        // Compute the norm of the vector v
+        double norm_v = 0.0;
+        for (int k = 0; k < 12; ++k) {
+            norm_v += v[k] * v[k];
+        }
+        norm_v = sqrt(norm_v);
+
+        // Normalize and store in Q
+        R[j * 12 + j] = norm_v;
+        for (int k = 0; k < 12; ++k) {
+            Q[k * 12 + j] = v[k] / norm_v;
+        }
+    }
+}
 
 
 __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144], bool updateEigenVectors){
@@ -2313,10 +2349,11 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
     double e_tmp, q_tmp;
 
     for (unsigned int iteration = 0; iteration < 23; iteration++){
-        compute_qr_tri_diagonal_0(ACopy, Q, R);
-        compute_qr_tri_diagonal_6(ACopy, Q, R);
-        compute_qr_tri_diagonal_8(ACopy, Q, R);
-        compute_qr_tri_diagonal_10(ACopy, Q, R);
+        // compute_qr_tri_diagonal_0(ACopy, Q, R);
+        // compute_qr_tri_diagonal_6(ACopy, Q, R);
+        // compute_qr_tri_diagonal_8(ACopy, Q, R);
+        // compute_qr_tri_diagonal_10(ACopy, Q, R);
+        modifiedGramSchmidt(ACopy, Q, R);
         
 
         // compute ACopy = R * Q
