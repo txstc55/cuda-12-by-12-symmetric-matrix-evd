@@ -8571,7 +8571,7 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
     double eq[144];
     double e_tmp, q_tmp;
 
-    for (unsigned int iteration = 0; iteration < 21; iteration++){
+    for (unsigned int iteration = 0; iteration < 1; iteration++){
         double ACopyCopy[144];
         for (unsigned int i = 0; i < 144; i++) ACopyCopy[i] = ACopy[i];
         // compute_qr_tri_diagonal_0(ACopy, Q, R);
