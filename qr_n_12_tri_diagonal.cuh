@@ -8579,7 +8579,7 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
         // compute_qr_tri_diagonal_8(ACopy, Q, R);
         // compute_qr_tri_diagonal_10(ACopy, Q, R);
         // householderQR(ACopy, Q, R, 12);
-        for (unsigned int i = 0; i < 144; i++) R[i] = Acopy[i];
+        for (unsigned int i = 0; i < 144; i++) R[i] = ACopy[i];
         // for (unsigned int i = 1; i < 11; i++){
         //     R[i * 12 + i] = ACopy[i * 12 + i];
         //     R[i * 12 + i - 1] = ACopy[i * 12 + i - 1];
