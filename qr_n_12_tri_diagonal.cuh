@@ -8579,21 +8579,21 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
         // compute_qr_tri_diagonal_8(ACopy, Q, R);
         // compute_qr_tri_diagonal_10(ACopy, Q, R);
         // householderQR(ACopy, Q, R, 12);
-        for (unsigned int i = 0; i < 144; i++) R[i] = 0;
-        for (unsigned int i = 1; i < 11; i++){
-            R[i * 12 + i] = ACopy[i * 12 + i];
-            R[i * 12 + i - 1] = ACopy[i * 12 + i - 1];
-            R[i * 12 + i + 1] = ACopy[i * 12 + i + 1];
-        }
-        R[0] = ACopy[0];
-        R[1] = ACopy[1];
-        R[143] = ACopy[143];
-        R[142] = ACopy[142];
-        for (unsigned int i = 0; i < 12; i++){
-            for (unsigned int j = 0; j < 12; j++){
-                Q[i * 12 + j] = 1.0 * (i == j);
-            }
-        }
+        // for (unsigned int i = 0; i < 144; i++) R[i] = 0;
+        // for (unsigned int i = 1; i < 11; i++){
+        //     R[i * 12 + i] = ACopy[i * 12 + i];
+        //     R[i * 12 + i - 1] = ACopy[i * 12 + i - 1];
+        //     R[i * 12 + i + 1] = ACopy[i * 12 + i + 1];
+        // }
+        // R[0] = ACopy[0];
+        // R[1] = ACopy[1];
+        // R[143] = ACopy[143];
+        // R[142] = ACopy[142];
+        // for (unsigned int i = 0; i < 12; i++){
+        //     for (unsigned int j = 0; j < 12; j++){
+        //         Q[i * 12 + j] = 1.0 * (i == j);
+        //     }
+        // }
         householder_qr_step_0(Q, R);
         householder_qr_step_1(Q, R);
         householder_qr_step_2(Q, R);
@@ -8605,6 +8605,12 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
         householder_qr_step_8(Q, R);
         householder_qr_step_9(Q, R);
         householder_qr_step_10(Q, R);
+        for (unsigned int i = 0; i < 144; i++){
+            // NaN detected because of numerical issue
+            if (Q[i] != Q[i] || R[i] != R[i]){
+                break;
+            }
+        }
 
         double relativeChange = 0;
         
