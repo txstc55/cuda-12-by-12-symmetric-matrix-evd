@@ -2312,48 +2312,11 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
     double eq[144];
     double e_tmp, q_tmp;
 
-    for (unsigned int iteration = 0; iteration < 1; iteration++){
-        // double ACopyCopy[144];
-        // for (unsigned int i = 0; i < 144; i++) ACopyCopy[i] = ACopy[i];
+    for (unsigned int iteration = 0; iteration < 23; iteration++){
         compute_qr_tri_diagonal_0(ACopy, Q, R);
         compute_qr_tri_diagonal_6(ACopy, Q, R);
         compute_qr_tri_diagonal_8(ACopy, Q, R);
         compute_qr_tri_diagonal_10(ACopy, Q, R);
-        // householderQR(ACopy, Q, R, 12);
-        // for (unsigned int i = 0; i < 144; i++) R[i] = ACopy[i];
-        // for (unsigned int i = 1; i < 11; i++){
-        //     R[i * 12 + i] = ACopy[i * 12 + i];
-        //     R[i * 12 + i - 1] = ACopy[i * 12 + i - 1];
-        //     R[i * 12 + i + 1] = ACopy[i * 12 + i + 1];
-        // }
-        // R[0] = ACopy[0];
-        // R[1] = ACopy[1];
-        // R[143] = ACopy[143];
-        // R[142] = ACopy[142];
-        // for (unsigned int i = 0; i < 12; i++){
-        //     for (unsigned int j = 0; j < 12; j++){
-        //         Q[i * 12 + j] = 1.0 * (i == j);
-        //     }
-        // }
-        // householder_qr_step_0(Q, R);
-        // householder_qr_step_2(Q, R);
-        // householder_qr_step_4(Q, R);
-        // householder_qr_step_6(Q, R);
-        // householder_qr_step_8(Q, R);
-        // bool continueRQ = true;
-        // for (unsigned int i = 0; i < 144; i++){
-        //     // NaN detected because of numerical issue
-        //     if (Q[i] != Q[i] || R[i] != R[i]){
-        //         continueRQ = false;
-        //         break;
-        //     }
-        // }
-
-        // if (!continueRQ){
-        //     break;
-        // }
-
-        // double relativeChange = 0;
         
 
         // compute ACopy = R * Q
@@ -2411,15 +2374,6 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
                 E[i] = eq[i];
             }
         }
-        // for (unsigned int i = 0; i < 11; i++){
-        //     relativeChange += fabs(ACopy[i * 12 + i] - ACopyCopy[i * 12 + i]) + fabs(ACopy[i * 12 + i + 1] - ACopyCopy[i * 12 + i + 1]);
-        // }
-        // relativeChange += fabs(ACopy[12 * 12 - 1] - ACopyCopy[12 * 12 - 1]);
-        // if (relativeChange < 1e-1){
-        //     // printf("Break with small change\n");
-        //     break;
-        // }
-
     }
 
 
