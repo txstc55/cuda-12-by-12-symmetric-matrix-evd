@@ -8450,32 +8450,36 @@ __device__ __forceinline__ void householder_qr_step_0(double Q[144], double R[14
   }
 
 __device__ __forceinline__ void find_pivot_and_rotate(double* A, const int n, double* E, bool updateEigenVectors) {
-    // Initialize maximum value and indices for pivot element
-    int p = -1;
-    int q = -1;
+    const double epsilon = 1e-12; // A small threshold to handle very small numbers
 
     for (unsigned int iteration = 0; iteration < 5; iteration++){
-        double max_value = 0.0;
+        double max_value = epsilon; // Initialize with epsilon to handle small numbers
+        int p = -1;
+        int q = -1;
+
         // Find the indices of the largest off-diagonal element in A
         for (int i = 0; i < n; ++i) {
-            for (int j = i + 1; j < n; ++j) {  // Only upper triangular part
-                if (fabsf(A[i * n + j]) > max_value) {
-                    max_value = fabsf(A[i * n + j]);
+            for (int j = i + 1; j < n; ++j) {
+                double abs_value = fabs(A[i * n + j]);
+                if (abs_value > max_value) {
+                    max_value = abs_value;
                     p = i;
                     q = j;
                 }
             }
         }
 
-        // Perform the rotation
+        if (max_value <= epsilon) { // Check for convergence
+            break;
+        }
+
+        // Calculate the rotation angle
         double a_pp = A[p * n + p];
         double a_qq = A[q * n + q];
         double a_pq = A[p * n + q];
-
-        // Calculate the rotation angle
-        double theta = 0.5 * atan2f(2.0 * a_pq, a_qq - a_pp);
-        double c = cosf(theta);
-        double s = sinf(theta);
+        double theta = 0.5 * atan2(2.0 * a_pq, a_qq - a_pp); // Use atan2 for better numerical stability
+        double c = cos(theta);
+        double s = sin(theta);
 
         // Perform the rotation
         for (int i = 0; i < n; ++i) {
@@ -8484,30 +8488,31 @@ __device__ __forceinline__ void find_pivot_and_rotate(double* A, const int n, do
                 double a_iq = A[i * n + q];
                 A[i * n + p] = c * a_ip - s * a_iq;
                 A[i * n + q] = s * a_ip + c * a_iq;
-                A[p * n + i] = A[i * n + p];  // Since A is symmetric
-                A[q * n + i] = A[i * n + q];  // Since A is symmetric
+                A[p * n + i] = A[i * n + p];  // Maintain symmetry
+                A[q * n + i] = A[i * n + q];  // Maintain symmetry
             }
         }
 
         // Update the diagonal elements
-        A[p * n + p] = c * c * a_pp + s * s * a_qq - 2.0f * s * c * a_pq;
-        A[q * n + q] = s * s * a_pp + c * c * a_qq + 2.0f * s * c * a_pq;
+        A[p * n + p] = c * c * a_pp + s * s * a_qq - 2.0 * s * c * a_pq;
+        A[q * n + q] = s * s * a_pp + c * c * a_qq + 2.0 * s * c * a_pq;
 
         // Zero out the pivot element
-        A[p * n + q] = 0.0f;
-        A[q * n + p] = 0.0f;  // Since A is symmetric
+        A[p * n + q] = 0.0;
+        A[q * n + p] = 0.0;  // Maintain symmetry
 
-        if (updateEigenVectors){
-        // Update the rotation matrix
-        for (int i = 0; i < n; ++i) {
-            double e_ip = E[i * n + p];
-            double e_iq = E[i * n + q];
-            E[i * n + p] = c * e_ip - s * e_iq;
-            E[i * n + q] = s * e_ip + c * e_iq;
-        }
+        if (updateEigenVectors) {
+            // Update the rotation matrix
+            for (int i = 0; i < n; ++i) {
+                double e_ip = E[i * n + p];
+                double e_iq = E[i * n + q];
+                E[i * n + p] = c * e_ip - s * e_iq;
+                E[i * n + q] = s * e_ip + c * e_iq;
+            }
         }
     }
 }
+
 
 
 __device__ void householderQR(const double *A, double *Q, double *R, int n) {
