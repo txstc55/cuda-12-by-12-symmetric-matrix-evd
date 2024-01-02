@@ -2298,12 +2298,19 @@ __device__ void householderQR(const double *A, double *Q, double *R, int n) {
 __device__ void modifiedGramSchmidt(const double *A, double *Q, double *R) {
     for (int j = 0; j < 12; ++j) {
         // Temporary array for the current column
-        double v[12]; // Assuming 12 = 12; adjust as needed
+        double v[12] = {0}; // Assuming 12 = 12; adjust as needed
 
         // Copy column j of A into v
         for (int i = 0; i < 12; ++i) {
             v[i] = A[i * 12 + j];
         }
+        // v[j] = A[j * 12 + j];
+        // if (j > 0){
+        //     v[j-1] = A[(j - 1) * 12 + j];
+        // }
+        // if (j < 12 - 1){
+        //     v[j + 1] = A[(j + 1) * 12 + j];
+        // }
 
         // Orthogonalization
         for (int i = 0; i < j; ++i) {
@@ -2349,11 +2356,22 @@ __device__ __forceinline__ void qr_12_tri_diagonal(double A[144], double E[144],
     double e_tmp, q_tmp;
 
     for (unsigned int iteration = 0; iteration < 23; iteration++){
-        // compute_qr_tri_diagonal_0(ACopy, Q, R);
-        // compute_qr_tri_diagonal_6(ACopy, Q, R);
-        // compute_qr_tri_diagonal_8(ACopy, Q, R);
-        // compute_qr_tri_diagonal_10(ACopy, Q, R);
-        modifiedGramSchmidt(ACopy, Q, R);
+        compute_qr_tri_diagonal_0(ACopy, Q, R);
+        compute_qr_tri_diagonal_6(ACopy, Q, R);
+        compute_qr_tri_diagonal_8(ACopy, Q, R);
+        compute_qr_tri_diagonal_10(ACopy, Q, R);
+        // modifiedGramSchmidt(ACopy, Q, R);
+        bool continueQR = true;
+        for (unsigned int i = 0; i < 12; i++){
+            if (fabs(R[i * 12 + i]) < 1e-6){
+                continueQR = false;
+                break;
+            }
+        }
+
+        if (!continueQR){
+            break;
+        }
         
 
         // compute ACopy = R * Q
