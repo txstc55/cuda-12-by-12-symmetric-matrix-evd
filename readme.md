@@ -5,19 +5,22 @@ This repo contains code for performing 12 by 12 symmetric matrix's eigen value d
 To use the code, just 
 
 ``` c++
-include "evd_12.cuh"
-__global__ void evd(double* d_A, double* d_e, int n){
+include "evd.cuh"
+template <int N>
+__global__ void evd_global(double* d_A, double* d_e, int n){
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid >= n) return;
-    evd_12(d_A + tid * 144, d_e + tid * 12);
+    evd<N>(d_A + tid * N * N, d_e + tid * N);
 }
 
 int main(){
     // ...
-    evd<<<BLOCKS, THREADS>>>(d_A, d_e, n);
+    evd<12><<<BLOCKS, THREADS>>>(d_A, d_e, n);
     // ...
 }
 ```
+
+The sizes supported are 12, 9 and 6.
 
 The results will be the Eigen vectors, which are stored in each column in `d_A`, the eigen values stored in `d_e`. To reconstruct the matrix, just do `d_A * d_e * d_A.T`.
 
