@@ -4,10 +4,7 @@
 #include <cuda_runtime.h>
 #include <curand.h>
 #include <curand_kernel.h>
-#include "householder_n_12.cuh"
-// #include "qr_n_12.cuh"
-#include "qr_n_12_tri_diagonal.cuh"
-#include "evd_12.cuh"
+#include "evd.cuh"
 #include <vector>
 
 // Error checking macro
@@ -29,14 +26,13 @@
     } \
 }
 
-__global__ void generateSymmetricMatrices(double *d_A, int n, unsigned long long seed) {
+__global__ void generateSymmetricMatrices(double *d_A, int n, unsigned long long seed, int N) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid >= n) return;
-    int N = 12;
 
     // Initialize the random number generator
     curandState_t state;
-    curand_init(seed, tid, 0, &state);
+    curand_init(seed + tid, tid, 0, &state);
 
     // Generate the upper triangle of the matrix
     for (int row = 0; row < N; ++row) {
@@ -49,10 +45,11 @@ __global__ void generateSymmetricMatrices(double *d_A, int n, unsigned long long
 
 }
 
-__global__ void evd(double* d_A, double* d_e, int n){
+template <unsigned int N>
+__global__ void evd_global(double* d_A, double* d_e, int n){
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid >= n) return;
-    evd_12(d_A + tid * 144, d_e + tid * 12);
+    evd<N>(d_A + tid * N * N, d_e + tid * N);
 }
 
 int main() {
@@ -63,7 +60,7 @@ int main() {
     syevjInfo_t syevj_params = NULL;
     cusolverEigMode_t jobz = CUSOLVER_EIG_MODE_VECTOR; // Compute eigenvalues and eigenvectors
     cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
-    int n = 12; // size of each matrix
+    const unsigned int n = 6; // size of each matrix
     int lda = n;
     int batchSize = 1000000;
     double *d_A = NULL; // Device matrix
@@ -103,27 +100,10 @@ int main() {
     // Generate random symmetric matrices
     // ===============================================
     // Seed for the random number generator
-    unsigned long long seed = 12887265;
+    unsigned long long seed = 13;
     // Launch the kernel to generate random symmetric matrices
-    generateSymmetricMatrices<<<blocksPerGrid, threadsPerBlock>>>(d_A, batchSize, seed);
+    generateSymmetricMatrices<<<blocksPerGrid, threadsPerBlock>>>(d_A, batchSize, seed, n);
     cudaDeviceSynchronize();
-    std::vector<double> manualMat = {0.6392813911953831, 0.0000000000000110, 0.0000000418986418, -0.4261878281680344, 0.0000000414003598, 0.0966623964244656, -0.4261874926604000, -0.0000000254645934, -0.0966624262315118, 0.2130939296330515, -0.0000000159357774, -0.0000000120915957, 
-0.0000000000000110, 0.6392813911953826, 0.0000000410945048, 0.0000000415927983, -0.4261878289721961, 0.0966623393070661, -0.0000000156299344, -0.4261874507617329, 0.0000000021435920, -0.0000000259628750, 0.2130938885385465, -0.0966623825451630, 
-0.0000000418986418, 0.0000000410945048, 0.7952742405529198, 0.0593304795308058, 0.0593304447832330, -0.5821807906743447, -0.0593305140077440, 0.0000000013157172, -0.4261874504153784, -0.0000000074217036, -0.0593304871934551, 0.2130940005368032, 
--0.4261878281680344, 0.0000000415927983, 0.0593304795308058, 0.5821809653294843, 0.1559928936811963, -0.1559929891040656, 0.0571008454968625, -0.0966624099369389, 0.0966624705140362, -0.2130939826583125, -0.0593305253370558, 0.0000000390592235, 
-0.0000000414003598, -0.4261878289721961, 0.0593304447832330, 0.1559928936811963, 0.5821807799912386, -0.1559928964349136, -0.0593305026702667, 0.2130938576918510, -0.0000000020118598, -0.0966624324112894, -0.3690868087108939, 0.0966624536635404, 
-0.0966623964244656, 0.0966623393070661, -0.5821807906743447, -0.1559929891040656, -0.1559928964349136, 0.5821809708369222, 0.0593305413217186, -0.0000000011010955, 0.2130938538861867, 0.0000000513578813, 0.0593305582289431, -0.2130940340487645, 
--0.4261874926604000, -0.0000000156299344, -0.0593305140077440, 0.0571008454968625, -0.0593305026702667, 0.0593305413217186, 0.5821805568743379, -0.0000000034593112, -0.0000000003463557, -0.2130939097108004, 0.0593305217595123, -0.0000000269676190, 
--0.0000000254645934, -0.4261874507617329, 0.0000000013157172, -0.0966624099369389, 0.2130938576918510, -0.0000000011010955, -0.0000000034593112, 0.4261875257533216, 0.0000000000000000, 0.0966624388608435, -0.2130939326834397, -0.0000000002146217, 
--0.0966624262315118, 0.0000000021435920, -0.4261874504153784, 0.0966624705140362, -0.0000000020118598, 0.2130938538861867, -0.0000000003463557, 0.0000000000000000, 0.4261875257533215, -0.0000000439361688, -0.0000000001317322, -0.2130939292241300, 
-0.2130939296330515, -0.0000000259628750, -0.0000000074217036, -0.2130939826583125, -0.0966624324112894, 0.0000000513578813, -0.2130939097108004, 0.0966624388608435, -0.0000000439361688, 0.2130939627360615, 0.0000000195133208, -0.0000000000000089, 
--0.0000000159357774, 0.2130938885385465, -0.0593304871934551, -0.0593305253370558, -0.3690868087108939, 0.0593305582289431, 0.0593305217595123, -0.2130939326834397, -0.0000000001317322, 0.0000000195133208, 0.3690868528557871, -0.0000000709037557, 
--0.0000000120915957, -0.0966623825451630, 0.2130940005368032, 0.0000000390592235, 0.0966624536635404, -0.2130940340487645, -0.0000000269676190, -0.0000000002146217, -0.2130939292241300, -0.0000000000000089, -0.0000000709037557, 0.2130939627360913, };
-    
-    for (int i = 0; i < 1; i++){
-    cudaMemcpy(d_A + 144 * i, manualMat.data(), 144 * sizeof(double), cudaMemcpyHostToDevice);
-    }
-
 
     // ===============================================
     // check and save the matrices
@@ -150,7 +130,7 @@ int main() {
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start, 0);
-    evd<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_W, batchSize);
+    evd_global<n><<<blocksPerGrid, threadsPerBlock>>>(d_A, d_W, batchSize);
     cudaDeviceSynchronize();
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
@@ -230,7 +210,7 @@ int main() {
     // Set syevj parameters
     // For example, setting the tolerance and the maximum number of sweeps:
     CHECK_CUSOLVER(cusolverDnXsyevjSetTolerance(syevj_params, 1e-6));
-    CHECK_CUSOLVER(cusolverDnXsyevjSetMaxSweeps(syevj_params, 100));
+    CHECK_CUSOLVER(cusolverDnXsyevjSetMaxSweeps(syevj_params, 1000));
 
     // Query working space of syevjBatched
     CHECK_CUSOLVER(cusolverDnDsyevjBatched_bufferSize(
@@ -292,7 +272,7 @@ int main() {
     cudaMemcpy(eigenVectors.data(), d_A, sizeof(double) * n * n * batchSize, cudaMemcpyDeviceToHost);
     cudaMemcpy(eigenValues.data(), d_W, sizeof(double) * n * batchSize, cudaMemcpyDeviceToHost);
 
-    
+    maximumError = 0.0;
     for (int i = 0; i < batchSize; i++){
         double temp[n * n];
         double eigenVector[n * n];
@@ -346,6 +326,8 @@ int main() {
     CHECK_CUDA(cudaFree(d_W));
     CHECK_CUDA(cudaFree(d_info));
     CHECK_CUDA(cudaFree(d_work));
+    CHECK_CUDA(cudaEventDestroy(start));
+    CHECK_CUDA(cudaEventDestroy(stop));
     CHECK_CUSOLVER(cusolverDnDestroySyevjInfo(syevj_params));
     CHECK_CUSOLVER(cusolverDnDestroy(cusolverH));
     CHECK_CUDA(cudaDeviceReset());
