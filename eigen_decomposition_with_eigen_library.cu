@@ -4,10 +4,7 @@
 #include <cuda_runtime.h>
 #include <curand.h>
 #include <curand_kernel.h>
-#include "householder_n_12.cuh"
-// #include "qr_n_12.cuh"
-#include "qr_n_12_tri_diagonal.cuh"
-#include "evd_12.cuh"
+#include "evd.cuh"
 #include <vector>
 #include <Eigen/Dense>
 #include <chrono>
@@ -31,14 +28,13 @@
     } \
 }
 
-__global__ void generateSymmetricMatrices(double *d_A, int n, unsigned long long seed) {
+__global__ void generateSymmetricMatrices(double *d_A, int n, unsigned long long seed, int N) {
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid >= n) return;
-    int N = 12;
 
     // Initialize the random number generator
     curandState_t state;
-    curand_init(seed, tid, 0, &state);
+    curand_init(seed + tid, tid, 0, &state);
 
     // Generate the upper triangle of the matrix
     for (int row = 0; row < N; ++row) {
@@ -51,10 +47,11 @@ __global__ void generateSymmetricMatrices(double *d_A, int n, unsigned long long
 
 }
 
-__global__ void evd(double* d_A, double* d_e, int n){
+template <unsigned int N>
+__global__ void evd_global(double* d_A, double* d_e, int n){
     int tid = blockIdx.x * blockDim.x + threadIdx.x;
     if (tid >= n) return;
-    evd_12(d_A + tid * 144, d_e + tid * 12);
+    evd<N>(d_A + tid * N * N, d_e + tid * N);
 }
 
 int main() {
@@ -65,7 +62,7 @@ int main() {
     syevjInfo_t syevj_params = NULL;
     cusolverEigMode_t jobz = CUSOLVER_EIG_MODE_VECTOR; // Compute eigenvalues and eigenvectors
     cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
-    int n = 12; // size of each matrix
+    const unsigned int n = 9; // size of each matrix
     int lda = n;
     int batchSize = 1000000;
     double *d_A = NULL; // Device matrix
@@ -107,7 +104,7 @@ int main() {
     // Seed for the random number generator
     unsigned long long seed = 12887265;
     // Launch the kernel to generate random symmetric matrices
-    generateSymmetricMatrices<<<blocksPerGrid, threadsPerBlock>>>(d_A, batchSize, seed);
+    generateSymmetricMatrices<<<blocksPerGrid, threadsPerBlock>>>(d_A, batchSize, seed, n);
     cudaDeviceSynchronize();
 
 
@@ -140,7 +137,7 @@ int main() {
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start, 0);
-    evd<<<blocksPerGrid, threadsPerBlock>>>(d_A, d_W, batchSize);
+    evd_global<n><<<blocksPerGrid, threadsPerBlock>>>(d_A, d_W, batchSize);
     cudaDeviceSynchronize();
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
@@ -345,32 +342,31 @@ int main() {
     CHECK_CUDA(cudaDeviceReset());
     auto startChrono = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < batchSize; ++i) {
-        // Map the 1D array to a 12x12 matrix
-        Eigen::Map<Eigen::Matrix<double, 12, 12, Eigen::RowMajor>> matrix(As.data() + i * 144);
+        Eigen::Map<Eigen::Matrix<double, n, n, Eigen::RowMajor>> matrix(As.data() + i * 144);
     
         // Compute the eigenvalue decomposition
-        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, 12, 12>> solver(matrix);
+        Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, n, n>> solver(matrix);
     
         // Eigenvalues
         auto eigenvalues = solver.eigenvalues();
         // Eigenvectors
         auto eigenvectors = solver.eigenvectors();
-        if (i == selected_index){
-            // print the eigen vectors and eigen values
-            printf("The selected matrix's eigen vectors using Eigen:\n");
-            for (int i = 0; i < n; i++){
-                for (int j = 0; j < n; j++){
-                    printf("%lf, ", eigenvectors(j, i));
-                }
-                printf("\n");
-            }
-            printf("\n");
-            printf("The selected matrix's eigen values using Eigen:\n");
-            for (int i = 0; i < n; i++){
-                printf("%lf, ", eigenvalues(i));
-            }
-            printf("\n\n");
-        }
+        // if (i == selected_index){
+        //     // print the eigen vectors and eigen values
+        //     printf("The selected matrix's eigen vectors using Eigen:\n");
+        //     for (int i = 0; i < n; i++){
+        //         for (int j = 0; j < n; j++){
+        //             printf("%lf, ", eigenvectors(j, i));
+        //         }
+        //         printf("\n");
+        //     }
+        //     printf("\n");
+        //     printf("The selected matrix's eigen values using Eigen:\n");
+        //     for (int i = 0; i < n; i++){
+        //         printf("%lf, ", eigenvalues(i));
+        //     }
+        //     printf("\n\n");
+        // }
     }
     auto endChrono = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = endChrono-startChrono;
