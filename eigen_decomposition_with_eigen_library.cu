@@ -102,7 +102,7 @@ int main() {
     // Generate random symmetric matrices
     // ===============================================
     // Seed for the random number generator
-    unsigned long long seed = 12887265;
+    unsigned long long seed = 13;
     // Launch the kernel to generate random symmetric matrices
     generateSymmetricMatrices<<<blocksPerGrid, threadsPerBlock>>>(d_A, batchSize, seed, n);
     cudaDeviceSynchronize();
@@ -342,7 +342,7 @@ int main() {
     CHECK_CUDA(cudaDeviceReset());
     auto startChrono = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < batchSize; ++i) {
-        Eigen::Map<Eigen::Matrix<double, n, n, Eigen::RowMajor>> matrix(As.data() + i * 144);
+        Eigen::Map<Eigen::Matrix<double, n, n, Eigen::RowMajor>> matrix(As.data() + i * n * n);
     
         // Compute the eigenvalue decomposition
         Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, n, n>> solver(matrix);
