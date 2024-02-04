@@ -6,6 +6,7 @@
 #include <curand_kernel.h>
 #include "evd.cuh"
 #include <vector>
+#include <ctime>
 
 // Error checking macro
 #define CHECK_CUDA(call) { \
@@ -110,7 +111,7 @@ int main() {
     // Generate random symmetric matrices
     // ===============================================
     // Seed for the random number generator
-    unsigned long long seed = 13;
+    unsigned long long seed = time(NULL);
     // Launch the kernel to generate random symmetric matrices
     generateSymmetricMatrices<<<blocksPerGrid, threadsPerBlock>>>(d_A, batchSize, seed, n);
     cudaDeviceSynchronize();
@@ -188,7 +189,7 @@ int main() {
             maximumError = diff;
         }
     }
-    printf("Maximum error: %lf\n", maximumError);
+    printf("Maximum error: %.12lf\n", maximumError);
     maximumError = 0.0;
     
 
@@ -313,7 +314,7 @@ int main() {
             maximumError = diff;
         }
     }
-    printf("Maximum error: %lf\n", maximumError);
+    printf("Maximum error: %.12lf\n", maximumError);
     cudaMemcpy(selected_eigen_vectors.data(), d_A + selected_index * n * n, sizeof(double) * n * n, cudaMemcpyDeviceToHost);
     cudaMemcpy(selected_eigen_values.data(), d_W + selected_index * n, sizeof(double) * n, cudaMemcpyDeviceToHost);
     printf("The selected matrix's eigen vectors using cusolver:\n");
