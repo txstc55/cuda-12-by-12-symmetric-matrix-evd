@@ -110,7 +110,7 @@ int main() {
     // Generate random symmetric matrices
     // ===============================================
     // Seed for the random number generator
-    unsigned long long seed = 1313;
+    unsigned long long seed = 13;
     // Launch the kernel to generate random symmetric matrices
     generateSymmetricMatrices<<<blocksPerGrid, threadsPerBlock>>>(d_A, batchSize, seed, n);
     cudaDeviceSynchronize();
