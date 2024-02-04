@@ -43,6 +43,16 @@ __global__ void generateSymmetricMatrices(double *d_A, int n, unsigned long long
         }
     }
 
+    // // use this code to generate only tri diagonal matrix
+    // for (int row = 0; row < N; ++row) {
+    //     d_A[tid * N * N + row * N + row] = curand_uniform_double(&state) * 2000 - 1000.0;
+    //     for (int col = row; col < min(N, row + 2); ++col) {
+    //         double randomValue = curand_uniform_double(&state) * 2000 - 1000.0;
+    //         d_A[tid * N * N + row * N + col] = randomValue; // Upper triangle
+    //         d_A[tid * N * N + col * N + row] = randomValue; // Mirror to lower triangle
+    //     }
+    // }
+
 }
 
 template <unsigned int N>
