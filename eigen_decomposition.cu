@@ -70,7 +70,7 @@ int main() {
     syevjInfo_t syevj_params = NULL;
     cusolverEigMode_t jobz = CUSOLVER_EIG_MODE_VECTOR; // Compute eigenvalues and eigenvectors
     cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
-    const unsigned int n = 9; // size of each matrix
+    const unsigned int n = 6; // size of each matrix
     int lda = n;
     int batchSize = 1000000;
     double *d_A = NULL; // Device matrix
@@ -110,7 +110,7 @@ int main() {
     // Generate random symmetric matrices
     // ===============================================
     // Seed for the random number generator
-    unsigned long long seed = 13;
+    unsigned long long seed = 1313;
     // Launch the kernel to generate random symmetric matrices
     generateSymmetricMatrices<<<blocksPerGrid, threadsPerBlock>>>(d_A, batchSize, seed, n);
     cudaDeviceSynchronize();
