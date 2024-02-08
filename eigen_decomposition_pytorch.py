@@ -14,7 +14,7 @@ def generate_symmetric_matrices(batch_size):
     return A
 
 # Number of matrices to generate in each batch
-batch_size = 1000  # Reduce batch size to fit GPU memory if necessary
+batch_size = 1000000  # Reduce batch size to fit GPU memory if necessary
 # Number of batches
 num_batches = num_matrices // batch_size
 
