@@ -6403,7 +6403,7 @@ compute_qr_tri_diagonal_6_3(const double A[36], double Q[36], double R[36]) {
 }
 
 template <unsigned int n>
-__device__ void modifiedGramSchmidt(const double *A, double *Q, double *R) {
+__device__ __forceinline__ void modifiedGramSchmidt(const double *A, double *Q, double *R) {
   for (int j = 0; j < n; ++j) {
     // Temporary array for the current column
     double v[n];
