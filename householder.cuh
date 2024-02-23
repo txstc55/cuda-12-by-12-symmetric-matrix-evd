@@ -38523,13 +38523,102 @@ __device__ __forceinline__ void compute_householder_6_2(double A[36],
   U[35] = (INTERMEDIATE_67 + INTERMEDIATE_57);
 }
 
+__device__ __forceinline__ void normalize(double *v, int n) {
+  double norm = 0.0;
+  for (unsigned int i = 0; i < n; ++i) {
+    norm += v[i] * v[i];
+  }
+  norm = sqrt(norm);
+  for (unsigned int i = 0; i < n; ++i) {
+    v[i] /= norm;
+  }
+}
+
+__device__ __forceinline__ double dot_product(const double *v1,
+                                              const double *v2, int size) {
+  double dot = 0.0;
+  for (int i = 0; i < size; ++i) {
+    dot += v1[i] * v2[i];
+  }
+  return dot;
+}
+
+template <unsigned int n>
+__device__ __forceinline__ void householder(double *A, double *U) {
+  for (int k = 0; k < n - 2; ++k) {
+    double x[n];
+    double H[n * n];
+    // initialize H as identity matrix
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < n; ++j) {
+        H[i * n + j] = (i == j) ? 1 : 0;
+      }
+    }
+
+    for (int i = 0; i < n - k - 1; ++i) {
+      x[i] = A[(k + 1 + i) * n + k]; // Copy the column below the diagonal
+    }
+
+    double x_norm = sqrt(dot_product(x, x, n - k - 1));
+    x[0] += x_norm;
+    x_norm = sqrt(dot_product(x, x, n - k - 1));
+    x_norm = x_norm == 0 ? 1 : x_norm;
+    for (int i = 0; i < n - k - 1; ++i) {
+      x[i] /= x_norm;
+    }
+
+    for (int j = k + 1; j < n; j++){
+      for (int l = k + 1; l < n; l++){
+        H[j * n + l] -= 2 * x[j - k - 1] * x[l - k - 1];
+      }
+    }
+
+    // perform A = H * A * H.T
+    double temp[n * n];
+    for (int i = 0; i < n; i++){
+      for (int j = 0; j < n; j++){
+        double sum = 0;
+        for (int l = 0; l < n; l++){
+          sum += H[i * n + l] * A[l * n + j];
+        }
+        temp[i * n + j] = sum;
+      }
+    }
+
+    for (int i = 0; i < n; i++){
+      for (int j = 0; j < n; j++){
+        double sum = 0;
+        for (int l = 0; l < n; l++){
+          sum += temp[i * n + l] * H[j * n + l];
+        }
+        A[i * n + j] = sum;
+      }
+    }
+
+
+    // perform U = U * H
+    for (int i = 0; i < n; i++){
+      for (int j = 0; j < n; j++){
+        double sum = 0;
+        for (int l = 0; l < n; l++){
+          sum += U[i * n + l] * H[l * n + j];
+        }
+        temp[i * n + j] = sum;
+      }
+    }
+    for (int i = 0; i < n * n; i++){
+      U[i] = temp[i];
+    }
+  }
+}
+
 template <unsigned int n>
 __device__ __forceinline__ void householderTransformation(double *a,
                                                           double *u) {
   // General template, can be left empty or static_assert to cause a
   // compile-time error if this version gets instantiated with an unsupported
   // value of n
-  static_assert(n == 6 || n == 9 || n == 12, "ERROR: n not supported");
+  householder<n>(a, u);
 }
 
 // Specialization for n = 9

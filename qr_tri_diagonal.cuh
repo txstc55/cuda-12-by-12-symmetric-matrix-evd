@@ -6,7 +6,7 @@ __device__ __forceinline__ void find_pivot_and_rotate(double *A, const int n,
   const double epsilon =
       1e-12; // A small threshold to handle very small numbers
 
-  for (unsigned int iteration = 0; iteration < 5; iteration++) {
+  for (unsigned int iteration = 0; iteration < 1; iteration++) {
     double max_value =
         epsilon; // Initialize with epsilon to handle small numbers
     int p = -1;
@@ -6403,13 +6403,58 @@ compute_qr_tri_diagonal_6_3(const double A[36], double Q[36], double R[36]) {
 }
 
 template <unsigned int n>
+__device__ void modifiedGramSchmidt(const double *A, double *Q, double *R) {
+  for (int j = 0; j < n; ++j) {
+    // Temporary array for the current column
+    double v[n];
+    for (int i = 0; i < n; ++i) {
+      v[i] = 0.0;
+    }
+
+    v[j] = A[j * n + j];
+    if (j > 0) {
+      v[j - 1] = A[j * n + j - 1];
+    }
+    if (j < n - 1) {
+      v[j + 1] = A[j * n + j + 1];
+    }
+
+    // Orthogonalization
+    for (int i = 0; i < j; ++i) {
+      R[i * n + j] = 0.0;
+      for (int k = 0; k < n; ++k) {
+        R[i * n + j] += Q[k * n + i] * v[k];
+      }
+
+      for (int k = 0; k < n; ++k) {
+        v[k] -= R[i * n + j] * Q[k * n + i];
+      }
+    }
+
+    // Compute the norm of the vector v
+    double norm_v = 0.0;
+    for (int k = 0; k < n; ++k) {
+      norm_v += v[k] * v[k];
+    }
+    norm_v = sqrt(norm_v);
+    norm_v = (norm_v == 0) ? 1.0 : norm_v;
+
+    // Normalize and store in Q
+    R[j * n + j] = norm_v;
+    for (int k = 0; k < n; ++k) {
+      Q[k * n + j] = v[k] / norm_v;
+    }
+  }
+}
+
+template <unsigned int n>
 __device__ __forceinline__ void compute_qr_tri_diagonal(const double A[n * n],
                                                         double Q[n * n],
                                                         double R[n * n]) {
   // General template, can be left empty or static_assert to cause a
   // compile-time error if this version gets instantiated with an unsupported
   // value of n
-  static_assert(n == 6 || n == 9 || n == 12, "ERROR: n not supported");
+  modifiedGramSchmidt<n>(A, Q, R);
 }
 
 // Specialization for n = 9
@@ -6490,7 +6535,7 @@ qr_tri_diagonal(double A[n * n], double E[n * n], bool updateEigenVectors) {
     }
     ACopy[j * n + i] = ACopy[i * n + j];
 
-    for (i = 1; i < 11; i++) {
+    for (i = 1; i < n - 1; i++) {
       j = i;
       ACopy[i * n + j] = 0.0;
       for (unsigned int k = i; k < n; k++) {
@@ -6503,8 +6548,8 @@ qr_tri_diagonal(double A[n * n], double E[n * n], bool updateEigenVectors) {
       }
       ACopy[j * n + i] = ACopy[i * n + j];
     }
-    i = 11;
-    j = 11;
+    i = n - 1;
+    j = n - 1;
     ACopy[i * n + j] = 0.0;
     for (unsigned int k = i; k < n; k++) {
       ACopy[i * n + j] += R[i * n + k] * Q[k * n + j];
