@@ -200,7 +200,7 @@ computeEigenVectors(const double A[n * n], const double v[n], double *ev) {
 template <unsigned int n>
 __device__ __forceinline__ void evd(double *A, double *v) {
   static_assert(n > 3, "ERROR: n <= 3 not supported");
-  static_assert(n <=12, "ERROR: n > 12 are not as fast since no specialization is done");
+  static_assert(n <=13, "ERROR: n > 13 are not as fast since no specialization is done");
   // A is the original matrix
   // after this function, A will be all the eigen vectors
   // v will store all the eigen values
