@@ -6403,43 +6403,46 @@ compute_qr_tri_diagonal_6_3(const double A[36], double Q[36], double R[36]) {
 }
 
 template <unsigned int n>
-__device__ __forceinline__ void modifiedGramSchmidt(const double *A, double *Q, double *R) {
+__device__ __forceinline__ void modifiedGramSchmidt(const double *A, double *Q,
+                                                    double *R) {
+  // Assuming n is not too large, this version still uses automatic (stack)
+  // memory for simplicity. For larger 'n', consider using shared memory if this
+  // device function is called from kernels with compatible execution
+  // configurations.
+
+  double v[n]; // Temporary column vector
+
+  // Improved version focuses on minimizing redundant operations and optimizing
+  // memory access.
   for (int j = 0; j < n; ++j) {
-    // Temporary array for the current column
-    double v[n];
+    // Initialize the vector 'v' with necessary elements from 'A'.
+    // This part remains largely unchanged but is a potential area for
+    // optimization based on how 'A' is accessed elsewhere.
     for (int i = 0; i < n; ++i) {
-      v[i] = 0.0;
+      v[i] = (i == j || i == j - 1 || i == j + 1) ? A[j * n + i] : 0.0;
     }
 
-    v[j] = A[j * n + j];
-    if (j > 0) {
-      v[j - 1] = A[j * n + j - 1];
-    }
-    if (j < n - 1) {
-      v[j + 1] = A[j * n + j + 1];
-    }
-
-    // Orthogonalization
+    // Orthogonalization step optimized to reduce redundant memory accesses.
     for (int i = 0; i < j; ++i) {
-      R[i * n + j] = 0.0;
+      double dotProduct = 0.0;
       for (int k = 0; k < n; ++k) {
-        R[i * n + j] += Q[k * n + i] * v[k];
+        dotProduct += Q[k * n + i] * v[k];
       }
+      R[i * n + j] = dotProduct;
 
       for (int k = 0; k < n; ++k) {
-        v[k] -= R[i * n + j] * Q[k * n + i];
+        v[k] -= dotProduct * Q[k * n + i];
       }
     }
 
-    // Compute the norm of the vector v
+    // Normalization of 'v' and updating 'Q' and 'R'
     double norm_v = 0.0;
     for (int k = 0; k < n; ++k) {
       norm_v += v[k] * v[k];
     }
     norm_v = sqrt(norm_v);
-    norm_v = (norm_v == 0) ? 1.0 : norm_v;
+    norm_v = (norm_v == 0) ? 1.0 : norm_v; // Prevent division by zero
 
-    // Normalize and store in Q
     R[j * n + j] = norm_v;
     for (int k = 0; k < n; ++k) {
       Q[k * n + j] = v[k] / norm_v;
