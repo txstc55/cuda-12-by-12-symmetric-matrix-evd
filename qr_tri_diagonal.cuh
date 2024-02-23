@@ -6584,7 +6584,7 @@ qr_tri_diagonal(double A[n * n], double E[n * n], bool updateEigenVectors) {
     keepDoingJacobian = false;
     for (int i = 0; i < n; i++) {
       for (int j = i + 1; j < n; j++) {
-        double absv = fabsf(ACopy[i * n + j]);
+        double absv = fabs(ACopy[i * n + j]);
         if (absv > 1e-6) {
           keepDoingJacobian = true;
           break;
