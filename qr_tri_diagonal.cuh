@@ -1,12 +1,12 @@
 #pragma once
 #include <cuda_runtime.h>
-__device__ __forceinline__ void find_pivot_and_rotate(double *A, const int n,
+template <unsigned int n>
+__device__ __forceinline__ void find_pivot_and_rotate(double *A,
                                                       double *E,
                                                       bool updateEigenVectors) {
   const double epsilon =
       1e-12; // A small threshold to handle very small numbers
-
-  for (unsigned int iteration = 0; iteration < 1; iteration++) {
+  for (unsigned int iteration = 0; iteration < 5; iteration++) {
     double max_value =
         epsilon; // Initialize with epsilon to handle small numbers
     int p = -1;
@@ -6405,10 +6405,6 @@ compute_qr_tri_diagonal_6_3(const double A[36], double Q[36], double R[36]) {
 template <unsigned int n>
 __device__ __forceinline__ void modifiedGramSchmidt(const double *A, double *Q,
                                                     double *R) {
-  // Assuming n is not too large, this version still uses automatic (stack)
-  // memory for simplicity. For larger 'n', consider using shared memory if this
-  // device function is called from kernels with compatible execution
-  // configurations.
 
   double v[n]; // Temporary column vector
 
@@ -6460,11 +6456,11 @@ __device__ __forceinline__ void compute_qr_tri_diagonal(const double A[n * n],
   modifiedGramSchmidt<n>(A, Q, R);
 }
 
-// Specialization for n = 9
+// Specialization for n = 6
 template <>
 __device__ __forceinline__ void
-compute_qr_tri_diagonal<3>(const double A[3 * 3], double Q[3 * 3],
-                           double R[3 * 3]) {
+compute_qr_tri_diagonal<6>(const double A[6 * 6], double Q[6 * 6],
+                           double R[6 * 6]) {
   compute_qr_tri_diagonal_6_0(A, Q, R);
   compute_qr_tri_diagonal_6_3(A, Q, R);
 }
@@ -6580,7 +6576,7 @@ qr_tri_diagonal(double A[n * n], double E[n * n], bool updateEigenVectors) {
   // now we do the jacobi iterations
   bool keepDoingJacobian = true;
   while (keepDoingJacobian) {
-    find_pivot_and_rotate(ACopy, n, E, updateEigenVectors);
+    find_pivot_and_rotate<n>(ACopy, E, updateEigenVectors);
     keepDoingJacobian = false;
     for (int i = 0; i < n; i++) {
       for (int j = i + 1; j < n; j++) {
