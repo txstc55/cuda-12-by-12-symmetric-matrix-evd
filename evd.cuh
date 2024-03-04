@@ -38,24 +38,29 @@ __device__ void computeEigenVectorsFromTriDiagonal(const double diagonal[N],
         // perform two power iterations
         // we first do the gauss elimination
         // do the first row
-        factor = offDiagonal[0] / diagonalCopy[0];
+        factor =
+            offDiagonal[0] / (diagonalCopy[0] == 0 ? 1.0 : diagonalCopy[0]);
         diagonalCopy[1] -= factor * offDiagonal[0];
         solution[1] -= factor * solution[0];
         // do the rest of the rows
         for (int j = 1; j < N - 2; j++) {
-          factor = offDiagonal[j] / diagonalCopy[j];
+          factor =
+              offDiagonal[j] / (diagonalCopy[j] == 0 ? 1.0 : diagonalCopy[j]);
           diagonalCopy[j + 1] -= factor * offDiagonal[j];
           solution[j + 1] -= factor * solution[j];
         }
 
         // do the last row
-        factor = offDiagonal[N - 2] / diagonalCopy[N - 2];
+        factor = offDiagonal[N - 2] /
+                 (diagonalCopy[N - 2] == 0 ? 1.0 : diagonalCopy[N - 2]);
         diagonalCopy[N - 1] -= factor * offDiagonal[N - 2];
         solution[N - 1] -= factor * solution[N - 2];
 
         // now we do the back substitution
         // do the last row
-        solution[N - 1] = solution[N - 1] / diagonalCopy[N - 1];
+        solution[N - 1] =
+            solution[N - 1] /
+            (diagonalCopy[N - 1] == 0 ? 1.0 : diagonalCopy[N - 1]);
         // do the rest of the rows
         // #pragma unroll
         for (int j = N - 2; j >= 0; j--) {
@@ -72,7 +77,7 @@ __device__ void computeEigenVectorsFromTriDiagonal(const double diagonal[N],
         norm = sqrt(sum);
         // #pragma unroll
         for (unsigned int j = 0; j < N; j++) {
-          ev[i * N + j] = solution[j] / norm;
+          ev[i * N + j] = solution[j] / (norm == 0 ? 1.0 : norm);
         }
       }
     }
