@@ -62,7 +62,7 @@ int main() {
     syevjInfo_t syevj_params = NULL;
     cusolverEigMode_t jobz = CUSOLVER_EIG_MODE_VECTOR; // Compute eigenvalues and eigenvectors
     cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
-    const unsigned int n = 9; // size of each matrix
+    const unsigned int n = 12; // size of each matrix
     int lda = n;
     int batchSize = 1000000;
     double *d_A = NULL; // Device matrix
@@ -185,7 +185,7 @@ int main() {
             maximumError = diff;
         }
     }
-    printf("Maximum error: %lf\n", maximumError);
+    printf("Maximum error: %.12lf\n", maximumError);
     maximumError = 0.0;
     
 
@@ -314,7 +314,7 @@ int main() {
             maximumError = diff;
         }
     }
-    printf("Maximum error: %lf\n", maximumError);
+    printf("Maximum error: %.12lf\n", maximumError);
     cudaMemcpy(selected_eigen_vectors.data(), d_A + selected_index * n * n, sizeof(double) * n * n, cudaMemcpyDeviceToHost);
     cudaMemcpy(selected_eigen_values.data(), d_W + selected_index * n, sizeof(double) * n, cudaMemcpyDeviceToHost);
     printf("The selected matrix's eigen vectors using cusolver:\n");
@@ -341,6 +341,7 @@ int main() {
     CHECK_CUSOLVER(cusolverDnDestroy(cusolverH));
     CHECK_CUDA(cudaDeviceReset());
     auto startChrono = std::chrono::high_resolution_clock::now();
+    maximumError = 0.0;
     for (int i = 0; i < batchSize; ++i) {
         Eigen::Map<Eigen::Matrix<double, n, n, Eigen::RowMajor>> matrix(As.data() + i * n * n);
     
@@ -351,26 +352,24 @@ int main() {
         auto eigenvalues = solver.eigenvalues();
         // Eigenvectors
         auto eigenvectors = solver.eigenvectors();
-        // if (i == selected_index){
-        //     // print the eigen vectors and eigen values
-        //     printf("The selected matrix's eigen vectors using Eigen:\n");
-        //     for (int i = 0; i < n; i++){
-        //         for (int j = 0; j < n; j++){
-        //             printf("%lf, ", eigenvectors(j, i));
-        //         }
-        //         printf("\n");
-        //     }
-        //     printf("\n");
-        //     printf("The selected matrix's eigen values using Eigen:\n");
-        //     for (int i = 0; i < n; i++){
-        //         printf("%lf, ", eigenvalues(i));
-        //     }
-        //     printf("\n\n");
-        // }
+
+        double diff = 0;
+        Eigen::DiagonalMatrix<double, n> D(eigenvalues);
+        Eigen::Matrix<double, n, n> reconstructedMatrix = eigenvectors * D * eigenvectors.transpose();
+        for (int j = 0; j < n; j++){
+            for (int k = 0; k < n; k++){
+                diff += abs(reconstructedMatrix(j, k) - matrix(j, k));
+            }
+        }
+        if (diff > maximumError){
+            maximumError = diff;
+        }
+
     }
     auto endChrono = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = endChrono-startChrono;
     printf("Time for 1 execution of Eigen value decomposition: %f ms\n", elapsed_seconds.count() * 1000);
+    printf("Maximum error: %.12lf\n", maximumError);
 
 
     return EXIT_SUCCESS;

@@ -1,272 +1,188 @@
 #pragma once
-#include "householder.cuh"
-#include "qr_tri_diagonal.cuh"
+#include "atda_12.cuh"
 #include <cuda_runtime.h>
-// this is an attempt to solve for eigen vectors directly from the tri diagonal
-// matrix it's working and not working yet the problem is the large error it got
-// from the substitution
-template <unsigned int n>
-__device__ __forceinline__ void
-computeEigenVectors(const double A[n * n], const double v[n], double *ev) {
-  double AForward[n * n];
-  double ABackward[n * n];
-  double chosenA[n * n];
-  for (int i = 0; i < n; i++) {
-    double minimumError = 0.0;
-    bool forward = true;
+#include <Eigen/Dense>
+
+template <unsigned int N>
+__device__ void computeEigenVectorsFromTriDiagonal(const double diagonal[N],
+                                                   const double offDiagonal[N],
+                                                   const double v[N],
+                                                   double *ev) {
+
+  double norm; // For normalization of vectors
+  double sum;
+  double factor;
+  for (unsigned int i = 0; i < N; i++) {
+    double solution[N] = {0}; // Temporary vector for eigenvector computations
     double lambda = v[i];
-    for (unsigned int j = 0; j < n * n; j++) {
-      AForward[j] = A[j];
-    }
-    for (int j = 0; j < n; j++) {
-      AForward[j * n + j] -= lambda;
-    }
+    double diagonalCopy[N];
+    solution[0] = 1.0;
 
-    // we will implement a row swapping gauss elimination
-    {
-      // do the gauss elimination
-      double factor = AForward[n] / AForward[0];
-      for (int j = 0; j < n; j++) {
-        AForward[j + n] -= factor * AForward[j];
-      }
-    }
-
-    for (int j = 1; j < n - 1; j++) {
-      // now perform the gauss elimination
-      double factor = AForward[(j + 1) * n + j] / AForward[j * n + j];
-      for (int k = j + 1; k < n; k++) {
-        AForward[(j + 1) * n + k] -= factor * AForward[j * n + k];
-      }
-      AForward[(j + 1) * n + j] = 0.0;
-    }
-    minimumError = fabs(AForward[n * n - 1]);
-
-    // now try the backward version
-    for (unsigned int j = 0; j < n * n; j++) {
-      ABackward[j] = A[n * n - 1 - j];
-    }
-    for (int j = 0; j < n; j++) {
-      ABackward[j * n + j] -= lambda;
-    }
-    // we will implement a row swapping gauss elimination
-    {
-      // do the gauss elimination
-      double factor = ABackward[n] / ABackward[0];
-      for (int j = 0; j < n; j++) {
-        ABackward[j + n] -= factor * ABackward[j];
-      }
-    }
-
-    for (int j = 1; j < n - 1; j++) {
-      // now perform the gauss elimination
-      double factor = ABackward[(j + 1) * n + j] / ABackward[j * n + j];
-      for (int k = j + 1; k < n; k++) {
-        ABackward[(j + 1) * n + k] -= factor * ABackward[j * n + k];
-      }
-      ABackward[(j + 1) * n + j] = 0.0;
-    }
-
-    unsigned int chosenPositions[n];
-    if (fabs(ABackward[n * n - 1]) < minimumError) {
-      minimumError = fabs(ABackward[n * n - 1]);
-      for (unsigned int j = 0; j < n * n; j++) {
-        chosenA[j] = ABackward[j];
-      }
-      for (unsigned int j = 0; j < n; j++) {
-        chosenPositions[j] = n - 1 - j;
-      }
-      forward = false;
-    } else {
-      for (unsigned int j = 0; j < n * n; j++) {
-        chosenA[j] = AForward[j];
-      }
-      for (unsigned int j = 0; j < n; j++) {
-        chosenPositions[j] = j;
-      }
-    }
-
-    // ok actually do the back substitution
-    double solution[n];
-    solution[n - 1] = 1.0;
-    for (int j = n - 2; j >= 0; j--) {
-      double sum = 0.0;
-      for (unsigned int k = j + 1; k < n; k++) {
-        sum += chosenA[j * n + k] * solution[k];
-      }
-      solution[j] = -sum / chosenA[j * n + j];
-    }
-    // normalize the solution
-    double sum = 0.0;
-    for (unsigned int j = 0; j < n; j++) {
-      sum += solution[j] * solution[j];
-    }
-    sum = sqrt(sum);
-    for (unsigned int j = 0; j < n; j++) {
-      solution[j] /= sum;
-    }
-
-    // here we do 2 iterations of power iteration
     for (int iteration = 0; iteration < 2; iteration++) {
-      double newSolution[n];
-      // first copy the matrix
-      if (!forward) {
-        for (unsigned int j = 0; j < n * n; j++) {
-          chosenA[j] = A[n * n - 1 - j];
-        }
-        for (int j = 0; j < n; j++) {
-          chosenA[j * n + j] -= lambda;
-        }
-      } else {
-        for (unsigned int j = 0; j < n * n; j++) {
-          chosenA[j] = A[j];
-        }
-        for (int j = 0; j < n; j++) {
-          chosenA[j * n + j] -= lambda;
+      for (int j = 0; j < N; j++) {
+        diagonalCopy[j] = diagonal[j] - lambda;
+      }
+      // do a check
+      bool continueSolve = true;
+      for (int k = 0; k < N; k++) {
+        if (abs(diagonalCopy[k]) < 1e-16) {
+          for (unsigned int j = 0; j < N; j++) {
+            ev[i * N + j] = 0;
+          }
+          ev[i * N + k] = 1;
+          continueSolve = false;
+          break;
         }
       }
-
-      // now do the row swapping gauss elimination
-      {
-        // deal with the first row
-        if (fabs(chosenA[0]) < fabs(chosenA[n])) {
-          // swap the first row with the second row
-          for (int j = 0; j < n; j++) {
-            double temp = chosenA[j];
-            chosenA[j] = chosenA[j + n];
-            chosenA[j + n] = temp;
-          }
-          double temp = solution[0];
-          solution[0] = solution[1];
-          solution[1] = temp;
-        }
-        // do the gauss elimination
-        double factor = chosenA[n] / chosenA[0];
-        for (int j = 0; j < n; j++) {
-          chosenA[j + n] -= factor * chosenA[j];
-        }
+      if (continueSolve) {
+        // perform two power iterations
+        // we first do the gauss elimination
+        // do the first row
+        factor = offDiagonal[0] / diagonalCopy[0];
+        diagonalCopy[1] -= factor * offDiagonal[0];
         solution[1] -= factor * solution[0];
-      }
+        // do the rest of the rows
+        for (int j = 1; j < N - 2; j++) {
+          factor = offDiagonal[j] / diagonalCopy[j];
+          diagonalCopy[j + 1] -= factor * offDiagonal[j];
+          solution[j + 1] -= factor * solution[j];
+        }
 
-      for (int j = 1; j < n - 1; j++) {
-        if (fabs(chosenA[j * n + j]) < fabs(chosenA[(j + 1) * n + j])) {
-          // swap the rows
-          for (int k = 0; k < n; k++) {
-            double temp = chosenA[j * n + k];
-            chosenA[j * n + k] = chosenA[(j + 1) * n + k];
-            chosenA[(j + 1) * n + k] = temp;
-          }
-          double temp = solution[j];
-          solution[j] = solution[j + 1];
-          solution[j + 1] = temp;
+        // do the last row
+        factor = offDiagonal[N - 2] / diagonalCopy[N - 2];
+        diagonalCopy[N - 1] -= factor * offDiagonal[N - 2];
+        solution[N - 1] -= factor * solution[N - 2];
+
+        // now we do the back substitution
+        // do the last row
+        solution[N - 1] = solution[N - 1] / diagonalCopy[N - 1];
+        // do the rest of the rows
+        // #pragma unroll
+        for (int j = N - 2; j >= 0; j--) {
+          solution[j] = (solution[j] - offDiagonal[j] * solution[j + 1]) /
+                        diagonalCopy[j];
         }
-        // now perform the gauss elimination
-        double factor = chosenA[(j + 1) * n + j] / chosenA[j * n + j];
-        for (int k = j + 1; k < n; k++) {
-          chosenA[(j + 1) * n + k] -= factor * chosenA[j * n + k];
+
+        // normalize the result
+        sum = 0.0;
+        // #pragma unroll
+        for (unsigned int j = 0; j < N; j++) {
+          sum += solution[j] * solution[j];
         }
-        chosenA[(j + 1) * n + j] = 0.0;
-        solution[j + 1] -= factor * solution[j];
-      }
-      // now do the back substitution
-      newSolution[n - 1] = solution[n - 1] / chosenA[n * n - 1];
-      for (int j = n - 2; j >= 0; j--) {
-        double sum = 0.0;
-        for (unsigned int k = j + 1; k < n; k++) {
-          sum += chosenA[j * n + k] * newSolution[k];
+        norm = sqrt(sum);
+        // #pragma unroll
+        for (unsigned int j = 0; j < N; j++) {
+          ev[i * N + j] = solution[j] / norm;
         }
-        newSolution[j] = (solution[j] - sum) / chosenA[j * n + j];
       }
-      // normalize the solution
-      double sum = 0.0;
-      for (unsigned int j = 0; j < n; j++) {
-        sum += newSolution[j] * newSolution[j];
-      }
-      sum = sqrt(sum);
-      for (unsigned int j = 0; j < n; j++) {
-        newSolution[j] /= sum;
-      }
-      // now copy the new solution to the old solution
-      for (unsigned int j = 0; j < n; j++) {
-        solution[j] = newSolution[j];
-      }
-    }
-    // now we want to put them back
-    for (unsigned int j = 0; j < n; j++) {
-      ev[i * n + chosenPositions[j]] = solution[j];
     }
   }
 }
 
-template <unsigned int n>
-__device__ __forceinline__ void evd(double *A, double *v) {
-  static_assert(n >= 2, "ERROR: n < 2 not supported");
-  static_assert(n <= 20, "ERROR: n > 20 are not as fast, use cuSolver instead");
-  // A is the original matrix
-  // after this function, A will be all the eigen vectors
-  // v will store all the eigen values
-  // first we will do the householder decomposition
-  // A = UHU^T
-  double U[n * n];
-  // set U as identity matrix
-  for (unsigned int i = 0; i < n * n; i++) {
-    U[i] = 0;
-  }
-  for (unsigned int i = 0; i < n; i++) {
-    U[i * n + i] = 1;
-  }
-  householderTransformation<n>(
-      A, U); // after this step, A_copy will be the tri-diagonal matrix
+template <unsigned int N> __device__ void project_to_spd(double *A, double *v) {
+  // first declare some typedefs
+  typedef typename Eigen::internal::plain_col_type<Eigen::Matrix<double, N, N>,
+                                                   double>::type VectorType;
+  typedef typename Eigen::internal::plain_col_type<Eigen::Matrix<double, N, N>,
+                                                   double>::type RealVectorType;
+  typename Eigen::Tridiagonalization<
+      Eigen::Matrix<double, N, N>>::SubDiagonalType m_subdiag;
+  typename Eigen::Tridiagonalization<
+      Eigen::Matrix<double, N, N>>::CoeffVectorType m_hcoeffs;
+  typedef Eigen::Matrix<double, N, N, Eigen::ColMajor, N, N> EigenvectorsType;
+  typedef typename Eigen::Tridiagonalization<Eigen::Matrix<double, N, N>>::
+      HouseholderSequenceType HouseholderSequenceType;
 
-  // save the tri diagonal system and the U matrix
-  double A_tri[n * n];
-  for (unsigned int i = 0; i < n * n; i++) {
-    A_tri[i] = A[i];
+  // first we copy matrix A
+  Eigen::Matrix<double, N, N> matrix;
+  for (int i = 0; i < N * N; i++) {
+    matrix.data()[i] = A[i];
   }
 
-  // now we will do the QR decomposition and jacobi iterations, and only save
-  // the eigen values
-  qr_tri_diagonal<n>(A, U, false);
+  // pre allocate some spaces
+  VectorType m_workspace;
+  RealVectorType m_eivalues;
+  EigenvectorsType m_eivec;
 
-  // record the eigen values
-  for (unsigned int i = 0; i < n; i++) {
-    v[i] = A[i * n + i];
+  // declare some aliases
+  RealVectorType &diag = m_eivalues;
+  EigenvectorsType &mat = m_eivec;
+
+  // rescale the matrix
+  mat = matrix.template triangularView<Eigen::Lower>();
+  double scale = mat.cwiseAbs().maxCoeff();
+  if (scale == 0)
+    scale = double(1);
+  mat.template triangularView<Eigen::Lower>() /= scale;
+
+  // space allocation
+  m_eivalues.resize(N, 1);
+  m_workspace.resize(N);
+  m_subdiag.resize(N - 1);
+  m_hcoeffs.resize(N - 1);
+  m_eivalues.resize(N, 1);
+
+  // first we perform the tri diagonalization
+  Eigen::internal::tridiagonalization_inplace(mat, m_hcoeffs);
+  mat = mat.real();
+  diag = mat.diagonal();
+  m_subdiag = mat.template diagonal<-1>();
+
+  // copy the diagonal and tri diagonal data
+  double diag_data[N];
+  for (int i = 0; i < N; i++) {
+    diag_data[i] = mat.data()[i * N + i];
+  }
+  double sub_diag[N - 1];
+  for (int i = 0; i < N - 1; i++) {
+    sub_diag[i] = mat.data()[(i)*N + i + 1];
   }
 
-  // now compute the eigen vectors based on the eigen values we got
-  computeEigenVectors<n>(A_tri, v, A);
+  // now we compute the diagonalization, without computing the eigen values
+  Eigen::internal::computeFromTridiagonal_impl(m_eivalues, m_subdiag, N, false,
+                                        m_eivec);
 
-  // we need to check if we got NaN for eigen vectors
-  // since the tri diagonal solve does not consider
-  // the cases where there's no off diagonal elements
-  bool validSolution = true;
-  for (unsigned int i = 0; i < n * n; i++) {
-    if (A[i] != A[i]) {
-      validSolution = false;
-      break;
-    }
+  // now we check if the eigen values are >=0
+  // because eigen values are already sorted
+  // we can just check the first one
+
+  if (m_eivalues.data()[0] >= 0) {
+    return;
   }
 
-  if (validSolution) {
-    // A = U * A^T
-    double temp[n * n];
-    for (unsigned int i = 0; i < n * n; i++) {
-      temp[i] = 0.0;
-    }
-    for (unsigned int i = 0; i < n; i++) {
-      for (unsigned int j = 0; j < n; j++) {
-        for (unsigned int k = 0; k < n; k++) {
-          temp[i * n + j] += U[i * n + k] * A[j * n + k];
-        }
-      }
-    }
-    for (unsigned int i = 0; i < n * n; i++) {
-      A[i] = temp[i];
-    }
-  } else {
-    // let's do it the old fashioned way
-    qr_tri_diagonal<n>(A_tri, U, true);
-    for (unsigned int i = 0; i < n * n; i++) {
-      A[i] = U[i];
-    }
+  // now we compute the eigen vectors
+  // we perform a tri diagonal solve
+  Eigen::Matrix<double, N, N> B;
+  computeEigenVectorsFromTriDiagonal<N>(diag_data, sub_diag, m_eivalues.data(),
+                                        B.data());
+
+  // then we extract the householder matrix
+  auto house = HouseholderSequenceType(mat, m_hcoeffs)
+                   .setLength(mat.rows() - 1)
+                   .setShift(1);
+
+  mat.diagonal().setOnes();
+  for (int k = N - 2; k >= 0; --k) {
+    mat.bottomRightCorner(N - k - 1, N - k - 1)
+        .applyHouseholderOnTheLeft(house.essentialVector(k), m_hcoeffs.coeff(k),
+                                   m_workspace.data());
+
+    // clear the off diagonal vector
+    mat.col(k).tail(N - k - 1).setZero();
+  }
+
+  // now we get the eigen values
+  Eigen::Matrix<double, N, N> MB = mat * B; // multiply the householder matrix
+  for (int i = 0; i < N; i++) {
+    m_eivalues.data()[i] *= scale;
+  }
+
+  // we put it back
+  atda_12(m_eivalues.data(), MB.data(), A);
+
+  // now we extract the H matrix from tri diagonalization
+
+  for (int i = 0; i < N; i++) {
+    v[i] = m_eivalues.data()[i];
   }
 }
