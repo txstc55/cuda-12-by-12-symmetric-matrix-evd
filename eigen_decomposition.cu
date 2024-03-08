@@ -54,17 +54,17 @@ __global__ void generateSymmetricMatrices(double *d_A, int n,
     }
   }
 
-    // // use this code to generate only tri diagonal matrix
-    // for (int row = 2; row < N; ++row) {
-    //   d_A[tid * N * N + row * N + row] =
-    //       curand_uniform_double(&state) * 2000 - 1000.0;
-    //   for (int col = row; col < min(N, row + 1); ++col) {
-    //     double randomValue = curand_uniform_double(&state) * 2000 - 1000.0;
-    //     d_A[tid * N * N + row * N + col] = randomValue; // Upper triangle
-    //     d_A[tid * N * N + col * N + row] =
-    //         randomValue; // Mirror to lower triangle
-    //   }
-    // }
+  // // use this code to generate only tri diagonal matrix
+  // for (int row = 2; row < N; ++row) {
+  //   d_A[tid * N * N + row * N + row] =
+  //       curand_uniform_double(&state) * 2000 - 1000.0;
+  //   for (int col = row; col < min(N, row + 1); ++col) {
+  //     double randomValue = curand_uniform_double(&state) * 2000 - 1000.0;
+  //     d_A[tid * N * N + row * N + col] = randomValue; // Upper triangle
+  //     d_A[tid * N * N + col * N + row] =
+  //         randomValue; // Mirror to lower triangle
+  //   }
+  // }
   // use this code to generate positive definite matrix
   // for (int row = 0; row < N; ++row) {
   //   for (int col = row; col < N; ++col) {
@@ -222,8 +222,8 @@ int main() {
   cudaEventSynchronize(stop);
   milliseconds = 0;
   cudaEventElapsedTime(&milliseconds, start, stop);
-  printf("Time for 1 execution of our eigen value decomposition: %f ms\n",
-         milliseconds);
+  printf("Time for %d execution of Eigen's eigen value decomposition: %f ms\n",
+         batchSize, milliseconds);
 
   // ===============================================
   // check the error for Eigen's solution
@@ -305,8 +305,8 @@ int main() {
   cudaEventSynchronize(stop);
   milliseconds = 0;
   cudaEventElapsedTime(&milliseconds, start, stop);
-  printf("Time for 1 execution of our eigen value decomposition: %f ms\n",
-         milliseconds);
+  printf("Time for %d execution of our eigen value decomposition: %f ms\n",
+         batchSize, milliseconds);
   // ===============================================
   // check the error for our solution
   // ===============================================
@@ -408,8 +408,8 @@ int main() {
   cudaEventSynchronize(stop);
   milliseconds = 0;
   cudaEventElapsedTime(&milliseconds, start, stop);
-  printf("Time for 1 execution of cusolver eigen value decomposition: %f ms\n",
-         milliseconds);
+  printf("Time for %d execution of cusolver eigen value decomposition: %f ms\n",
+         batchSize, milliseconds);
   // Synchronize and check for errors
   CHECK_CUDA(cudaDeviceSynchronize());
   CHECK_CUDA(
