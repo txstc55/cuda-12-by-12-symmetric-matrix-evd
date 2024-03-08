@@ -44,28 +44,7 @@ __global__ void generateSymmetricMatrices(double *d_A, int n,
   curandState_t state;
   curand_init(seed + tid, tid, 0, &state);
 
-  // // Generate the upper triangle of the matrix
-  // for (int row = 0; row < N; ++row) {
-  //   for (int col = row; col < N; ++col) {
-  //     double randomValue = curand_uniform_double(&state) * 2000 - 1000.0;
-  //     d_A[tid * N * N + row * N + col] = randomValue; // Upper triangle
-  //     d_A[tid * N * N + col * N + row] =
-  //         randomValue; // Mirror to lower triangle
-  //   }
-  // }
-
-  //   // use this code to generate only tri diagonal matrix
-  //   for (int row = 0; row < N; ++row) {
-  //     d_A[tid * N * N + row * N + row] =
-  //         curand_uniform_double(&state) * 2000 - 1000.0;
-  //     for (int col = row; col < min(N, row + 1); ++col) {
-  //       double randomValue = curand_uniform_double(&state) * 2000 - 1000.0;
-  //       d_A[tid * N * N + row * N + col] = randomValue; // Upper triangle
-  //       d_A[tid * N * N + col * N + row] =
-  //           randomValue; // Mirror to lower triangle
-  //     }
-  //   }
-  // use this code to generate positive definite matrix
+  // Generate the upper triangle of the matrix
   for (int row = 0; row < N; ++row) {
     for (int col = row; col < N; ++col) {
       double randomValue = curand_uniform_double(&state) * 2000 - 1000.0;
@@ -74,22 +53,43 @@ __global__ void generateSymmetricMatrices(double *d_A, int n,
           randomValue; // Mirror to lower triangle
     }
   }
-  // perform A = A^T * A
-  double temp[N * N];
-  for (int i = 0; i < N * N; i++) {
-    temp[i] = 0;
-  }
-  for (int i = 0; i < N; i++) {
-    for (int j = 0; j < N; j++) {
-      for (int k = 0; k < N; k++) {
-        temp[i * N + j] +=
-            d_A[tid * N * N + i * N + k] * d_A[tid * N * N + k * N + j];
-      }
-    }
-  }
-  for (int i = 0; i < N * N; i++) {
-    d_A[tid * N * N + i] = temp[i];
-  }
+
+    // // use this code to generate only tri diagonal matrix
+    // for (int row = 2; row < N; ++row) {
+    //   d_A[tid * N * N + row * N + row] =
+    //       curand_uniform_double(&state) * 2000 - 1000.0;
+    //   for (int col = row; col < min(N, row + 1); ++col) {
+    //     double randomValue = curand_uniform_double(&state) * 2000 - 1000.0;
+    //     d_A[tid * N * N + row * N + col] = randomValue; // Upper triangle
+    //     d_A[tid * N * N + col * N + row] =
+    //         randomValue; // Mirror to lower triangle
+    //   }
+    // }
+  // use this code to generate positive definite matrix
+  // for (int row = 0; row < N; ++row) {
+  //   for (int col = row; col < N; ++col) {
+  //     double randomValue = curand_uniform_double(&state) * 2000 - 1000.0;
+  //     d_A[tid * N * N + row * N + col] = randomValue; // Upper triangle
+  //     d_A[tid * N * N + col * N + row] =
+  //         randomValue; // Mirror to lower triangle
+  //   }
+  // }
+  // // perform A = A^T * A
+  // double temp[N * N];
+  // for (int i = 0; i < N * N; i++) {
+  //   temp[i] = 0;
+  // }
+  // for (int i = 0; i < N; i++) {
+  //   for (int j = 0; j < N; j++) {
+  //     for (int k = 0; k < N; k++) {
+  //       temp[i * N + j] +=
+  //           d_A[tid * N * N + i * N + k] * d_A[tid * N * N + k * N + j];
+  //     }
+  //   }
+  // }
+  // for (int i = 0; i < N * N; i++) {
+  //   d_A[tid * N * N + i] = temp[i];
+  // }
 }
 
 template <typename Scalar, int size>
@@ -147,7 +147,7 @@ int main() {
   cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
   const unsigned int n = 12; // size of each matrix
   int lda = n;
-  int batchSize = 100000;
+  int batchSize = 1000000;
   double *d_A = NULL;    // Device matrix
   double *d_W = NULL;    // Device eigenvalues
   int *d_info = NULL;    // info on device
@@ -171,7 +171,7 @@ int main() {
   CHECK_CUDA(cudaMalloc((void **)&d_W, sizeof(double) * n * batchSize));
   CHECK_CUDA(cudaMalloc((void **)&d_info, sizeof(int) * batchSize));
   // Setup the execution configuration
-  int threadsPerBlock = 16;
+  int threadsPerBlock = 32;
   int blocksPerGrid = (batchSize + threadsPerBlock - 1) / threadsPerBlock;
   std::vector<double> eigenVectors;
   std::vector<double> eigenValues;
@@ -334,7 +334,7 @@ int main() {
       for (int k = 0; k < n; k++) {
         for (int l = 0; l < n; l++) {
           temp[j * n + k] +=
-              eigenVector[j * n + l] * eigenValue[l] * eigenVector[k * n + l];
+              eigenVector[l * n + j] * eigenValue[l] * eigenVector[l * n + k];
           if (temp != temp) {
             printf("NAN detected in eigen vector or eigen values\n");
             exit(1);

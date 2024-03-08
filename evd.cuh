@@ -1,7 +1,7 @@
 #pragma once
 #include "atda_12.cuh"
-#include <cuda_runtime.h>
 #include <Eigen/Dense>
+#include <cuda_runtime.h>
 
 template <unsigned int N>
 __device__ void computeEigenVectorsFromTriDiagonal(const double diagonal[N],
@@ -12,6 +12,12 @@ __device__ void computeEigenVectorsFromTriDiagonal(const double diagonal[N],
   double norm; // For normalization of vectors
   double sum;
   double factor;
+  for (int i = 0; i < N; i++) {
+    if (abs(diagonal[i] - v[i]) < 1e-16) {
+      ev[0] = 0.0 / 0.0; // force NaN
+      return;
+    }
+  }
   for (unsigned int i = 0; i < N; i++) {
     double solution[N] = {0}; // Temporary vector for eigenvector computations
     double lambda = v[i];
@@ -23,57 +29,48 @@ __device__ void computeEigenVectorsFromTriDiagonal(const double diagonal[N],
         diagonalCopy[j] = diagonal[j] - lambda;
       }
       // do a check
-      bool continueSolve = true;
-      for (int k = 0; k < N; k++) {
-        if (abs(diagonalCopy[k]) < 1e-16) {
-          for (unsigned int j = 0; j < N; j++) {
-            ev[i * N + j] = 0;
-          }
-          ev[i * N + k] = 1;
-          continueSolve = false;
-          break;
-        }
+      // perform two power iterations
+      // we first do the gauss elimination
+      // do the first row
+      factor = offDiagonal[0] / diagonalCopy[0];
+      diagonalCopy[1] -= factor * offDiagonal[0];
+      solution[1] -= factor * solution[0];
+      // do the rest of the rows
+      for (int j = 1; j < N - 2; j++) {
+        factor = offDiagonal[j] / diagonalCopy[j];
+        diagonalCopy[j + 1] -= factor * offDiagonal[j];
+        solution[j + 1] -= factor * solution[j];
       }
-      if (continueSolve) {
-        // perform two power iterations
-        // we first do the gauss elimination
-        // do the first row
-        factor = offDiagonal[0] / diagonalCopy[0];
-        diagonalCopy[1] -= factor * offDiagonal[0];
-        solution[1] -= factor * solution[0];
-        // do the rest of the rows
-        for (int j = 1; j < N - 2; j++) {
-          factor = offDiagonal[j] / diagonalCopy[j];
-          diagonalCopy[j + 1] -= factor * offDiagonal[j];
-          solution[j + 1] -= factor * solution[j];
-        }
 
-        // do the last row
-        factor = offDiagonal[N - 2] / diagonalCopy[N - 2];
-        diagonalCopy[N - 1] -= factor * offDiagonal[N - 2];
-        solution[N - 1] -= factor * solution[N - 2];
+      // do the last row
+      factor = offDiagonal[N - 2] / diagonalCopy[N - 2];
+      diagonalCopy[N - 1] -= factor * offDiagonal[N - 2];
+      solution[N - 1] -= factor * solution[N - 2];
 
-        // now we do the back substitution
-        // do the last row
-        solution[N - 1] = solution[N - 1] / diagonalCopy[N - 1];
-        // do the rest of the rows
-        // #pragma unroll
-        for (int j = N - 2; j >= 0; j--) {
-          solution[j] = (solution[j] - offDiagonal[j] * solution[j + 1]) /
-                        diagonalCopy[j];
-        }
+      // now we do the back substitution
+      // do the last row
+      solution[N - 1] = solution[N - 1] / diagonalCopy[N - 1];
+      // do the rest of the rows
+      // #pragma unroll
+      for (int j = N - 2; j >= 0; j--) {
+        solution[j] =
+            (solution[j] - offDiagonal[j] * solution[j + 1]) / diagonalCopy[j];
+      }
 
-        // normalize the result
-        sum = 0.0;
-        // #pragma unroll
-        for (unsigned int j = 0; j < N; j++) {
-          sum += solution[j] * solution[j];
-        }
-        norm = sqrt(sum);
-        // #pragma unroll
-        for (unsigned int j = 0; j < N; j++) {
-          ev[i * N + j] = solution[j] / norm;
-        }
+      // normalize the result
+      sum = 0.0;
+      // #pragma unroll
+      for (unsigned int j = 0; j < N; j++) {
+        sum += solution[j] * solution[j];
+      }
+      norm = sqrt(sum);
+      if (norm != norm) {
+        ev[0] = 0.0 / 0.0; // force NaN
+        return;
+      }
+      // #pragma unroll
+      for (unsigned int j = 0; j < N; j++) {
+        ev[i * N + j] = solution[j] / norm;
       }
     }
   }
@@ -140,7 +137,7 @@ template <unsigned int N> __device__ void project_to_spd(double *A, double *v) {
 
   // now we compute the diagonalization, without computing the eigen values
   Eigen::internal::computeFromTridiagonal_impl(m_eivalues, m_subdiag, N, false,
-                                        m_eivec);
+                                               m_eivec);
 
   // now we check if the eigen values are >=0
   // because eigen values are already sorted
@@ -155,6 +152,23 @@ template <unsigned int N> __device__ void project_to_spd(double *A, double *v) {
   Eigen::Matrix<double, N, N> B;
   computeEigenVectorsFromTriDiagonal<N>(diag_data, sub_diag, m_eivalues.data(),
                                         B.data());
+  // tri diagonal solve failed
+  if (B.data()[0] != B.data()[0]) {
+    Eigen::Matrix<double, N, N> symMtr;
+    for (int i = 0; i < N * N; i++) {
+      symMtr.data()[i] = A[i];
+    }
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, N, N>> eigenSolver(
+        symMtr);
+    B = eigenSolver.eigenvectors();
+    for (int i = 0; i < N; i++) {
+      v[i] = eigenSolver.eigenvalues()[i];
+    }
+    for (int i = 0; i < N * N; i++) {
+      A[i] = B.data()[i];
+    }
+    return;
+  }
 
   // then we extract the householder matrix
   auto house = HouseholderSequenceType(mat, m_hcoeffs)
@@ -178,7 +192,10 @@ template <unsigned int N> __device__ void project_to_spd(double *A, double *v) {
   }
 
   // we put it back
-  atda_12(m_eivalues.data(), MB.data(), A);
+  // atda_12(m_eivalues.data(), MB.data(), A);
+  for (int i = 0; i < N * N; i++) {
+    A[i] = MB.data()[i];
+  }
 
   // now we extract the H matrix from tri diagonalization
 
