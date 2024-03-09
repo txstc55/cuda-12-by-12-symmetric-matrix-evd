@@ -1,5 +1,4 @@
 #pragma once
-#include "atda_12.cuh"
 #include <Eigen/Dense>
 #include <cuda_runtime.h>
 
