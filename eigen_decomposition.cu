@@ -92,17 +92,15 @@ __global__ void generateSymmetricMatrices(double *d_A, int n,
 }
 
 template <typename Scalar, int size>
-__device__ __host__ void makePD(Eigen::Matrix<Scalar, size, size> &symMtr,
+__device__ __host__ void evd_eigen(Eigen::Matrix<Scalar, size, size> &symMtr,
                                 double *d_e) {
   Eigen::SelfAdjointEigenSolver<Eigen::Matrix<Scalar, size, size>> eigenSolver(
       symMtr);
   for (int i = 0; i < size; i++) {
     d_e[i] = eigenSolver.eigenvalues()[i];
   }
-  for (int i = 0; i < size; i++) {
-    for (int j = 0; j < size; j++) {
-      symMtr(i, j) = eigenSolver.eigenvectors()(i, j);
-    }
+  for (int i = 0; i < size * size; i++){
+    symMtr.data()[i] = eigenSolver.eigenvectors().data()[i];
   }
 }
 
@@ -118,11 +116,9 @@ __global__ void evd_eigen(double *d_A, double *d_e, int n) {
     }
   }
 
-  makePD(symMtr, d_e + tid * N);
-  for (int i = 0; i < N; i++) {
-    for (int j = 0; j < N; j++) {
-      d_A[tid * N * N + i * N + j] = symMtr(i, j);
-    }
+  evd_eigen(symMtr, d_e + tid * N);
+  for (int i = 0; i < N * N; i++){
+    d_A[tid * N * N + i] = symMtr.data()[i];
   }
 }
 
@@ -132,7 +128,7 @@ __global__ void evd_eigen_modified(double *d_A, double *d_e, int n) {
   if (tid >= n)
     return;
 
-  project_to_spd<N>(d_A + tid * N * N, d_e + tid * N);
+  evd_ours<N>(d_A + tid * N * N, d_e + tid * N);
 }
 
 int main() {
@@ -144,7 +140,7 @@ int main() {
   cusolverEigMode_t jobz =
       CUSOLVER_EIG_MODE_VECTOR; // Compute eigenvalues and eigenvectors
   cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
-  const unsigned int n = 5; // size of each matrix
+  const unsigned int n = 12; // size of each matrix
   int lda = n;
   int batchSize = 1000000;
   double *d_A = NULL;    // Device matrix
@@ -251,7 +247,7 @@ int main() {
       for (int k = 0; k < n; k++) {
         for (int l = 0; l < n; l++) {
           temp[j * n + k] +=
-              eigenVector[j * n + l] * eigenValue[l] * eigenVector[k * n + l];
+              eigenVector[l * n + j] * eigenValue[l] * eigenVector[l * n + k];
           if (temp != temp) {
             printf("NAN detected in eigen vector or eigen values\n");
             exit(1);
