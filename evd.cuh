@@ -325,19 +325,18 @@ template <unsigned int N> __device__ void evd_ours(double *A, double *v) {
     return;
   }
   // cases for N <= 6
-  if (N <= 6) {
+  if (N < 9) {
     Eigen::Matrix<double, N, N> symMtr;
     for (int i = 0; i < N * N; i++) {
       symMtr.data()[i] = A[i];
     }
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, N, N>> eigenSolver(
         symMtr);
-    Eigen::Matrix<double, N, N> B = eigenSolver.eigenvectors();
     for (int i = 0; i < N; i++) {
       v[i] = eigenSolver.eigenvalues()[i];
     }
     for (int i = 0; i < N * N; i++) {
-      A[i] = B.data()[i];
+      A[i] = eigenSolver.eigenvectors().data()[i];
     }
     return;
   }
@@ -403,13 +402,6 @@ template <unsigned int N> __device__ void evd_ours(double *A, double *v) {
   Eigen::internal::computeFromTridiagonal_impl(m_eivalues, m_subdiag, N, false,
                                                m_eivec);
 
-  // now we check if the eigen values are >=0
-  // because eigen values are already sorted
-  // we can just check the first one
-
-  if (m_eivalues.data()[0] >= 0) {
-    return;
-  }
 
   // now we compute the eigen vectors
   // we perform a tri diagonal solve
