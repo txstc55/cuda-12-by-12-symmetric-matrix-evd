@@ -1,4 +1,3 @@
-#include "atda_12.cuh"
 #include "evd.cuh"
 #include <Eigen/Dense>
 #include <Eigen/Eigenvalues>
@@ -145,7 +144,7 @@ int main() {
   cusolverEigMode_t jobz =
       CUSOLVER_EIG_MODE_VECTOR; // Compute eigenvalues and eigenvectors
   cublasFillMode_t uplo = CUBLAS_FILL_MODE_LOWER;
-  const unsigned int n = 12; // size of each matrix
+  const unsigned int n = 5; // size of each matrix
   int lda = n;
   int batchSize = 1000000;
   double *d_A = NULL;    // Device matrix
@@ -201,14 +200,14 @@ int main() {
   cudaMemcpy(selected_matrix.data(), d_A + selected_index * n * n,
              sizeof(double) * n * n, cudaMemcpyDeviceToHost);
 
-  printf("The selected matrix:\n");
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      printf("%lf, ", selected_matrix[i * n + j]);
-    }
-    printf("\n");
-  }
-  printf("\n");
+  // printf("The selected matrix:\n");
+  // for (int i = 0; i < n; i++) {
+  //   for (int j = 0; j < n; j++) {
+  //     printf("%lf, ", selected_matrix[i * n + j]);
+  //   }
+  //   printf("\n");
+  // }
+  // printf("\n");
 
   // ===============================================
   // Eigen value decomposition with Eigen code
@@ -275,19 +274,19 @@ int main() {
              sizeof(double) * n * n, cudaMemcpyDeviceToHost);
   cudaMemcpy(selected_eigen_values.data(), d_W + selected_index * n,
              sizeof(double) * n, cudaMemcpyDeviceToHost);
-  printf("The selected matrix's eigen vectors using Eigen's method:\n");
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      printf("%lf, ", selected_eigen_vectors[i * n + j]);
-    }
-    printf("\n");
-  }
-  printf("\n");
-  printf("The selected matrix's eigen values using Eigen's method:\n");
-  for (int i = 0; i < n; i++) {
-    printf("%lf, ", selected_eigen_values[i]);
-  }
-  printf("\n\n");
+  // printf("The selected matrix's eigen vectors using Eigen's method:\n");
+  // for (int i = 0; i < n; i++) {
+  //   for (int j = 0; j < n; j++) {
+  //     printf("%lf, ", selected_eigen_vectors[i * n + j]);
+  //   }
+  //   printf("\n");
+  // }
+  // printf("\n");
+  // printf("The selected matrix's eigen values using Eigen's method:\n");
+  // for (int i = 0; i < n; i++) {
+  //   printf("%lf, ", selected_eigen_values[i]);
+  // }
+  // printf("\n\n");
 
   // ===============================================
   // Eigen value decomposition with our code
@@ -357,19 +356,19 @@ int main() {
              sizeof(double) * n * n, cudaMemcpyDeviceToHost);
   cudaMemcpy(selected_eigen_values.data(), d_W + selected_index * n,
              sizeof(double) * n, cudaMemcpyDeviceToHost);
-  printf("The selected matrix's eigen vectors using our method:\n");
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      printf("%lf, ", selected_eigen_vectors[i * n + j]);
-    }
-    printf("\n");
-  }
-  printf("\n");
-  printf("The selected matrix's eigen values using our method:\n");
-  for (int i = 0; i < n; i++) {
-    printf("%lf, ", selected_eigen_values[i]);
-  }
-  printf("\n\n");
+  // printf("The selected matrix's eigen vectors using our method:\n");
+  // for (int i = 0; i < n; i++) {
+  //   for (int j = 0; j < n; j++) {
+  //     printf("%lf, ", selected_eigen_vectors[i * n + j]);
+  //   }
+  //   printf("\n");
+  // }
+  // printf("\n");
+  // printf("The selected matrix's eigen values using our method:\n");
+  // for (int i = 0; i < n; i++) {
+  //   printf("%lf, ", selected_eigen_values[i]);
+  // }
+  // printf("\n\n");
 
   // ===============================================
   // setting up Eigen value decomposition with cuSolver
@@ -467,19 +466,19 @@ int main() {
              sizeof(double) * n * n, cudaMemcpyDeviceToHost);
   cudaMemcpy(selected_eigen_values.data(), d_W + selected_index * n,
              sizeof(double) * n, cudaMemcpyDeviceToHost);
-  printf("The selected matrix's eigen vectors using cusolver:\n");
-  for (int i = 0; i < n; i++) {
-    for (int j = 0; j < n; j++) {
-      printf("%lf, ", selected_eigen_vectors[j * n + i]);
-    }
-    printf("\n");
-  }
-  printf("\n");
-  printf("The selected matrix's eigen values using cusolver:\n");
-  for (int i = 0; i < n; i++) {
-    printf("%lf, ", selected_eigen_values[i]);
-  }
-  printf("\n\n");
+  // printf("The selected matrix's eigen vectors using cusolver:\n");
+  // for (int i = 0; i < n; i++) {
+  //   for (int j = 0; j < n; j++) {
+  //     printf("%lf, ", selected_eigen_vectors[j * n + i]);
+  //   }
+  //   printf("\n");
+  // }
+  // printf("\n");
+  // printf("The selected matrix's eigen values using cusolver:\n");
+  // for (int i = 0; i < n; i++) {
+  //   printf("%lf, ", selected_eigen_values[i]);
+  // }
+  // printf("\n\n");
 
   // Cleanup
   CHECK_CUDA(cudaFree(d_A));
