@@ -1,0 +1,180 @@
+Matrix size: 4
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 4.579584 ms
+Maximum error: 0.000000000038
+Time for 1000000 execution of our eigen value decomposition: 6.066912 ms
+Maximum error: 0.000000000359
+Time for 1000000 execution of cusolver eigen value decomposition: 87.584099 ms
+Batched syevj execution successful!
+Maximum error: 0.011959179722
+Matrix size: 5
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 8.209056 ms
+Maximum error: 0.000000000068
+Time for 1000000 execution of our eigen value decomposition: 9.584896 ms
+Maximum error: 0.000000000455
+Time for 1000000 execution of cusolver eigen value decomposition: 124.626945 ms
+Batched syevj execution successful!
+Maximum error: 0.017309933477
+Matrix size: 6
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 12.724448 ms
+Maximum error: 0.000000000098
+Time for 1000000 execution of our eigen value decomposition: 16.170528 ms
+Maximum error: 0.000000000381
+Time for 1000000 execution of cusolver eigen value decomposition: 158.002686 ms
+Batched syevj execution successful!
+Maximum error: 0.022735678356
+Matrix size: 7
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 17.687231 ms
+Maximum error: 0.000000000141
+Time for 1000000 execution of our eigen value decomposition: 21.736383 ms
+Maximum error: 0.000000000439
+Time for 1000000 execution of cusolver eigen value decomposition: 212.456100 ms
+Batched syevj execution successful!
+Maximum error: 0.031285701391
+Matrix size: 8
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 24.112192 ms
+Maximum error: 0.000000000182
+Time for 1000000 execution of our eigen value decomposition: 26.716255 ms
+Maximum error: 0.000000001147
+Time for 1000000 execution of cusolver eigen value decomposition: 263.016968 ms
+Batched syevj execution successful!
+Maximum error: 0.037387644435
+Matrix size: 9
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 34.759617 ms
+Maximum error: 0.000000000227
+Time for 1000000 execution of our eigen value decomposition: 31.370081 ms
+Maximum error: 0.000000001634
+Time for 1000000 execution of cusolver eigen value decomposition: 324.729431 ms
+Batched syevj execution successful!
+Maximum error: 0.047112655843
+Matrix size: 10
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 42.948479 ms
+Maximum error: 0.000000000288
+Time for 1000000 execution of our eigen value decomposition: 38.700481 ms
+Maximum error: 0.000000002324
+Time for 1000000 execution of cusolver eigen value decomposition: 397.971924 ms
+Batched syevj execution successful!
+Maximum error: 0.056522114710
+Matrix size: 11
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 54.711842 ms
+Maximum error: 0.000000000337
+Time for 1000000 execution of our eigen value decomposition: 50.039520 ms
+Maximum error: 0.000000003252
+Time for 1000000 execution of cusolver eigen value decomposition: 504.582642 ms
+Batched syevj execution successful!
+Maximum error: 0.066632988331
+Matrix size: 12
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 70.274910 ms
+Maximum error: 0.000000000444
+Time for 1000000 execution of our eigen value decomposition: 54.735744 ms
+Maximum error: 0.000000003844
+Time for 1000000 execution of cusolver eigen value decomposition: 577.230957 ms
+Batched syevj execution successful!
+Maximum error: 0.077557899205
+Matrix size: 13
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 85.860191 ms
+Maximum error: 0.000000000554
+Time for 1000000 execution of our eigen value decomposition: 64.307518 ms
+Maximum error: 0.000000023875
+Time for 1000000 execution of cusolver eigen value decomposition: 673.407837 ms
+Batched syevj execution successful!
+Maximum error: 0.087290971962
+Matrix size: 14
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 97.464767 ms
+Maximum error: 0.000000000635
+Time for 1000000 execution of our eigen value decomposition: 75.329948 ms
+Maximum error: 0.000000008938
+Time for 1000000 execution of cusolver eigen value decomposition: 782.270142 ms
+Batched syevj execution successful!
+Maximum error: 0.104386100331
+Matrix size: 15
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 127.965347 ms
+Maximum error: 0.000000000706
+Time for 1000000 execution of our eigen value decomposition: 87.381859 ms
+Maximum error: 0.000000023375
+Time for 1000000 execution of cusolver eigen value decomposition: 909.129761 ms
+Batched syevj execution successful!
+Maximum error: 0.120641904318
+Matrix size: 16
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 137.147354 ms
+Maximum error: 0.000000000955
+Time for 1000000 execution of our eigen value decomposition: 101.659775 ms
+Maximum error: 0.000000011949
+Time for 1000000 execution of cusolver eigen value decomposition: 931.462646 ms
+Batched syevj execution successful!
+Maximum error: 0.133947507843
+Matrix size: 17
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 263.537048 ms
+Maximum error: 0.000000000913
+Time for 1000000 execution of our eigen value decomposition: 116.818466 ms
+Maximum error: 0.000000015525
+Time for 1000000 execution of cusolver eigen value decomposition: 2202.210205 ms
+Batched syevj execution successful!
+Maximum error: 0.148796219683
+Matrix size: 18
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 198.388550 ms
+Maximum error: 0.000000001059
+Time for 1000000 execution of our eigen value decomposition: 131.679810 ms
+Maximum error: 0.000000014505
+Time for 1000000 execution of cusolver eigen value decomposition: 2448.550293 ms
+Batched syevj execution successful!
+Maximum error: 0.165768450437
+Matrix size: 19
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 368.374878 ms
+Maximum error: 0.000000001251
+Time for 1000000 execution of our eigen value decomposition: 155.697159 ms
+Maximum error: 0.000000014162
+Time for 1000000 execution of cusolver eigen value decomposition: 2725.112549 ms
+Batched syevj execution successful!
+Maximum error: 0.181555177150
+Matrix size: 20
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 394.863373 ms
+Maximum error: 0.000000001364
+Time for 1000000 execution of our eigen value decomposition: 164.688614 ms
+Maximum error: 0.000000025942
+Time for 1000000 execution of cusolver eigen value decomposition: 3022.879639 ms
+Batched syevj execution successful!
+Maximum error: 0.208711312281
+Matrix size: 21
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 511.024567 ms
+Maximum error: 0.000000001641
+Time for 1000000 execution of our eigen value decomposition: 183.877823 ms
+Maximum error: 0.000000055910
+Time for 1000000 execution of cusolver eigen value decomposition: 3336.991211 ms
+Batched syevj execution successful!
+Maximum error: 0.221905662464
+Matrix size: 22
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 524.327148 ms
+Maximum error: 0.000000001743
+Time for 1000000 execution of our eigen value decomposition: 206.656860 ms
+Maximum error: 0.000000020777
+Time for 1000000 execution of cusolver eigen value decomposition: 3668.202148 ms
+Batched syevj execution successful!
+Maximum error: 0.244093874144
+Matrix size: 23
+Random matrix generated and stored on host and device
+Time for 1000000 execution of Eigen's eigen value decomposition: 656.182495 ms
+Maximum error: 0.000000001911
+Time for 1000000 execution of our eigen value decomposition: 230.069824 ms
+Maximum error: 0.000000021477
+Time for 1000000 execution of cusolver eigen value decomposition: 4022.198730 ms
+Batched syevj execution successful!
+Maximum error: 0.270838282212
