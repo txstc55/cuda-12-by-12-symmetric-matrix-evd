@@ -324,22 +324,22 @@ template <unsigned int N> __device__ void evd_ours(double *A, double *v) {
     evd_ours_small<N>(A, v);
     return;
   }
-  // cases for N <= 6
-  if (N < 9) {
-    Eigen::Matrix<double, N, N> symMtr;
-    for (int i = 0; i < N * N; i++) {
-      symMtr.data()[i] = A[i];
-    }
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, N, N>> eigenSolver(
-        symMtr);
-    for (int i = 0; i < N; i++) {
-      v[i] = eigenSolver.eigenvalues()[i];
-    }
-    for (int i = 0; i < N * N; i++) {
-      A[i] = eigenSolver.eigenvectors().data()[i];
-    }
-    return;
-  }
+  // // cases for N <= 6
+  // if (N < 9) {
+  //   Eigen::Matrix<double, N, N> symMtr;
+  //   for (int i = 0; i < N * N; i++) {
+  //     symMtr.data()[i] = A[i];
+  //   }
+  //   Eigen::SelfAdjointEigenSolver<Eigen::Matrix<double, N, N>> eigenSolver(
+  //       symMtr);
+  //   for (int i = 0; i < N; i++) {
+  //     v[i] = eigenSolver.eigenvalues()[i];
+  //   }
+  //   for (int i = 0; i < N * N; i++) {
+  //     A[i] = eigenSolver.eigenvectors().data()[i];
+  //   }
+  //   return;
+  // }
   // first declare some typedefs
   typedef typename Eigen::internal::plain_col_type<Eigen::Matrix<double, N, N>,
                                                    double>::type VectorType;
